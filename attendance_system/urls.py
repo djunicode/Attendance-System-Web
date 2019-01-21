@@ -1,4 +1,4 @@
-"""attendance_system URL Configuration
+"""attendance_project URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/2.1/topics/http/urls/
@@ -14,8 +14,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from Attendance import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', views.HomePage.as_view(), name='index'),
+    path('Attendance/', include('Attendance.urls')),
+    path('Attendance/', include('django.contrib.auth.urls')),
+    path('login_success/', views.TestPage.as_view(), name='login_success'),
+    path('logout_success/', views.ThanksPage.as_view(), name='logout_success'),
 ]
