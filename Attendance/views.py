@@ -1,12 +1,12 @@
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from . import forms
-from django.views.generic import CreateView, TemplateView
+from django.views.generic import CreateView, FormView, TemplateView
 from django.contrib.auth import logout
 
-class SignUp(CreateView):
+class SignUp(FormView):
     form_class = forms.UserCreateForm
-    success_url = reverse_lazy('login')
+    success_url = reverse_lazy('dash')
     template_name = 'Attendance/signup.html'
 
 class HomePage(TemplateView):

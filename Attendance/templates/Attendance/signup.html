@@ -5,7 +5,7 @@
             <h1>Sign Up</h1>
             <form method="POST">
                 {% csrf_token %}
-                {{ AppUser_create_form.as_p }}
+                {{ form.as_p }}
                 <input type="submit" class="btn btn-primary" value="Sign Up">
             </form>
         </div>
