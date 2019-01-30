@@ -15,6 +15,7 @@ class UserCreateForm(UserCreationForm):
         self.fields['email'].label = 'Email Address'
     '''
 
+
 class TeacherLoginForm(ModelForm):
     class Meta:
         model = AppUser

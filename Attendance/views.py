@@ -5,14 +5,18 @@ from django.views.generic import TemplateView
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.decorators import login_required
 
+
 class HomePage(TemplateView):
     template_name = 'Attendance/index.html'
+
 
 class TestPage(TemplateView):
     template_name = 'Attendance/login_success.html'
 
+
 class ThanksPage(TemplateView):
     template_name = 'Attendance/logout_success.html'
+
 
 def login_user_teacher(request):
     # logout(request)
@@ -28,9 +32,11 @@ def login_user_teacher(request):
                 return redirect('Attendance:dash')
     return render(request, 'Attendance/login.html', context={'form': forms.TeacherLoginForm()})
 
+
 @login_required
 def dash(request):
     return render(request, 'Attendance/login_success.html')
+
 
 def signup(request):
     if request.method == 'POST':

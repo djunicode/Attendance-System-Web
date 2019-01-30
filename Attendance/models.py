@@ -14,6 +14,7 @@ class AppUser(AbstractUser):
     def __str__(self):
         return self.username
 
+
 class Subject(models.Model):
     name = models.CharField(max_length=50)
     semester = models.PositiveSmallIntegerField()
