@@ -127,6 +127,8 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [STATIC_DIR]
 
 # LOGIN_REDIRECT_URL = 'test'
-LOGOUT_REDIRECT_URL = 'thanks'
+LOGOUT_REDIRECT_URL = 'Attendance:thanks'
+
+LOGIN_URL = 'Attendance:login'
 
 AUTH_USER_MODEL = "Attendance.AppUser"
