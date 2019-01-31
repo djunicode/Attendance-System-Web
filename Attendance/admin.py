@@ -1,7 +1,7 @@
 from django.contrib import admin
-from models import AppUser, Subject, Lecture, Div, Teacher, Student
+from .models import AppUser, Subject, Lecture, Div, Teacher, Student
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from forms import UserCreateForm
+from .forms import UserCreateForm
 
 
 class UserAdmin(BaseUserAdmin):
