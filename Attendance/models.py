@@ -37,7 +37,8 @@ class Teacher(models.Model):
 class Div(models.Model):
     semester = models.PositiveSmallIntegerField()
     year = models.PositiveSmallIntegerField()
-    division = models.CharField(max_length=1)
+    division = models.CharField(max_length=10)
+    subject = models.ManyToManyField(Subject, related_name='division', through="DivisionSubject")
     classteacher = models.OneToOneField(Teacher, on_delete=models.SET_NULL, null=True, related_name='Div')
 
     def __str__(self):
@@ -87,3 +88,8 @@ class StudentLecture(models.Model):
 class SubjectTeacher(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+
+
+class DivisionSubject(models.Model):
+    division = models.ForeignKey(Div, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
