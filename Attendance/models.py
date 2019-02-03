@@ -61,7 +61,7 @@ class Lecture(models.Model):
     endTime = models.TimeField(auto_now=False, auto_now_add=False)
     date = models.DateField(auto_now=False, auto_now_add=False)
     teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)
-    lectureClass = models.ForeignKey(Div, on_delete=models.PROTECT)
+    div = models.ForeignKey(Div, on_delete=models.PROTECT)
     subject = models.ForeignKey(Subject, on_delete=models.PROTECT)
 
     def __str__(self):
@@ -73,7 +73,7 @@ class Lecture(models.Model):
 class Student(models.Model):
     user = models.OneToOneField(AppUser, on_delete=models.CASCADE, primary_key=True)
     sapID = models.BigIntegerField(unique=True)
-    div = models.ForeignKey(Div, on_delete=models.SET_NULL, null=True)
+    div = models.ManyToManyField(Div, related_name='student', through='StudentDivision')
     lecture = models.ManyToManyField(Lecture, related_name='student', through='StudentLecture')
 
     def __str__(self):
@@ -93,3 +93,8 @@ class SubjectTeacher(models.Model):
 class DivisionSubject(models.Model):
     division = models.ForeignKey(Div, on_delete=models.CASCADE)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+
+
+class StudentDivision(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    division = models.ForeignKey(Div, on_delete=models.CASCADE)
