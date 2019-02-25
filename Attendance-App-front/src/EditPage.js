@@ -105,7 +105,7 @@ class EditPage extends React.Component {
                         <CustomTableCell component="th" scope="row">
                             <Checkbox
                             checked={row.p_a.toLowerCase() == "present" ? this.state.check : this.state.uncheck}
-                            onChange={this.handleChange('check')}
+                            onChange={row.p_a.toLowerCase() == "present" ? this.handleChange('check') : this.handleChange('uncheck')}
                             value="check"
                             />
                         </CustomTableCell>
