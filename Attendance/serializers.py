@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Teacher, Student, Lecture, Div, Subject
 
+
 class TeacherSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source='getfullname')
 
@@ -8,6 +9,7 @@ class TeacherSerializer(serializers.ModelSerializer):
 
         model = Teacher
         fields = ('name', 'specialization', 'teacherID', 'subject',)
+
 
 class StudentSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source='getfullname')
