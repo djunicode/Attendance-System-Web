@@ -84,7 +84,7 @@ def fillLecture(count=50):
                 lecture.subject = random.choice(list(Subject.objects.all()))
                 lecture.teacher = random.choice(list(Teacher.objects.all()))
                 lecture.save()
-                SubjectTeacher.objects.get_or_create(subject=lecture.subject, teacher=lecture.teacher)
+                SubjectTeacher.objects.get_or_create(subject=lecture.subject, teacher=lecture.teacher, div=lecture.div)
                 DivisionTeacher.objects.get_or_create(division=lecture.div, teacher=lecture.teacher)
                 DivisionSubject.objects.get_or_create(division=lecture.div, subject=lecture.subject)
 

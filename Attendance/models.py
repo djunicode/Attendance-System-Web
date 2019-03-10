@@ -55,6 +55,14 @@ class Div(models.Model):
             yearname = "BE"
         return yearname + " " + self.division
 
+    def get_class_type(self):
+        if len(self.division) is 1:
+            return "Class"
+        elif len(self.division) is 2:
+            return "Practical"
+        else:
+            return "Elective"
+
 
 class Lecture(models.Model):
     roomNumber = models.CharField(max_length=10, blank=True)
@@ -89,6 +97,7 @@ class StudentLecture(models.Model):
 class SubjectTeacher(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+    div = models.ForeignKey(Div, on_delete=models.CASCADE, null=True)
 
 
 class DivisionSubject(models.Model):

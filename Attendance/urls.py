@@ -9,7 +9,6 @@ urlpatterns = [
     path('login/', views.login_user_teacher, name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('signup/', views.signup, name='signup'),
-    path('home_dashboard/', views.dash, name='dash'),
     path('thanks/', views.ThanksPage.as_view(), name='thanks'),
 
     path('teachers/', views.TeacherListView.as_view(), name='teacher-list'),
@@ -22,4 +21,5 @@ urlpatterns = [
     path('lectures/<int:pk>/', views.LectureDetailView.as_view(), name='lecture-details'),
     path('divisions/', views.DivisionListView.as_view(), name='division-list'),
     path('divisions/<int:pk>/', views.DivisionDetailView.as_view(), name='division-details'),
+    path('login-teacher/', views.LoginTeacherView.as_view(), name='login-teacher'),
 ]

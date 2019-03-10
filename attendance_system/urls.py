@@ -22,6 +22,6 @@ urlpatterns = [
     path('', views.HomePage.as_view(), name='index'),
     path('Attendance/', include('Attendance.urls')),
     path('Attendance/', include('django.contrib.auth.urls')),
-    path('login_success/', views.TestPage.as_view(), name='login_success'),
+    path('login_success/', views.dash, name='login_success'),
     path('logout_success/', views.ThanksPage.as_view(), name='logout_success'),
 ]
