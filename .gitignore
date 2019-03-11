@@ -53,7 +53,7 @@ coverage.xml
 .static_storage/
 media/
 local_settings.py
-user_profile/migrations/*
+Attendance/migrations/*
 
 # Flask stuff:
 instance/
@@ -101,3 +101,4 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+.vscode/settings.json

@@ -4,14 +4,18 @@ from . import forms
 from django.views.generic import TemplateView
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponse, JsonResponse
+import json
+from rest_framework.permissions import IsAuthenticated
+
+from rest_framework import generics, status
+from .models import Teacher, Student, Lecture, Div, Subject, SubjectTeacher
+from .serializers import TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer
 
 
 class HomePage(TemplateView):
     template_name = 'Attendance/index.html'
-
-
-class TestPage(TemplateView):
-    template_name = 'Attendance/login_success.html'
 
 
 class ThanksPage(TemplateView):
@@ -51,3 +55,104 @@ def signup(request):
     else:
         form = forms.UserCreateForm()
     return render(request, 'Attendance/signup.html', {'form': form})
+
+
+# REST FRAMEWORK RELATED API VIEWS
+
+
+class TeacherListView(generics.ListCreateAPIView):
+    queryset = Teacher.objects.all()
+    serializer_class = TeacherSerializer
+
+
+class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = TeacherSerializer
+
+    def get_queryset(self):
+        return Teacher.objects.all().filter(username=self.request.user)
+
+
+class StudentListView(generics.ListCreateAPIView):
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+
+
+class StudentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = StudentSerializer
+
+    def get_queryset(self):
+        return Student.objects.all().filter(username=self.request.user)
+
+
+class LectureListView(generics.ListCreateAPIView):
+    queryset = Lecture.objects.all()
+    serializer_class = LectureSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class LectureDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = LectureSerializer
+
+    def get_queryset(self):
+        return Lecture.objects.all().filter(user=self.request.user)
+
+
+class SubjectListView(generics.ListCreateAPIView):
+    queryset = Subject.objects.all()
+    serializer_class = SubjectSerializer
+
+
+class SubjectDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = SubjectSerializer
+
+    def get_queryset(self):
+        return Subject.objects.all().filter(user=self.request.user)
+
+
+class DivisionListView(generics.ListCreateAPIView):
+    queryset = Div.objects.all()
+    serializer_class = DivSerializer
+
+
+class DivisionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = DivSerializer
+
+    def get_queryset(self):
+        return Div.objects.all().filter(user=self.request.user)
+
+
+class LoginTeacherView(generics.GenericAPIView):
+
+    def post(self, request, *args, **kwargs):
+        teacherID = request.POST.get('teacherID')
+        password = request.POST.get('password')
+
+        teacher = Teacher.objects.get(teacherID=teacherID)
+        user = authenticate(username=teacher.user.username, password=password)
+
+        if user is not None:
+            # authenticate user
+            divisions = Div.objects.filter(classteacher=teacher)
+            class_subjects = Subject.objects.filter(division__in=divisions).distinct()
+            taught_subjects = []
+
+            division = None
+            for div in divisions:
+                if div.get_class_type() == "Class":
+                    division = div
+
+                subjectteacher = SubjectTeacher.objects.filter(teacher=teacher, div=div)
+                for st in subjectteacher:
+                    taught_subjects.append((str(div), SubjectSerializer(st.subject).data))
+
+            response_data = {
+                'taught_subjects': json.dumps(taught_subjects),
+                'class_subjects': SubjectSerializer(class_subjects, many=True).data,
+                'division_they_are_class_teacher_of': DivSerializer(division).data,
+            }
+            return JsonResponse(response_data)
+        else:
+            response_data = {'error_message': "Cannot log you in"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
