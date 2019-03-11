@@ -22,4 +22,5 @@ urlpatterns = [
     path('divisions/', views.DivisionListView.as_view(), name='division-list'),
     path('divisions/<int:pk>/', views.DivisionDetailView.as_view(), name='division-details'),
     path('login-teacher/', views.LoginTeacherView.as_view(), name='login-teacher'),
+    path('random/', views.RandomView.as_view(), name='random'),
 ]
