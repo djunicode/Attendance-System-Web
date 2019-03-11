@@ -27,6 +27,5 @@ class UserAPITestCase(TestCase):
         self.assertTrue(status.is_success(response.status_code))
         response2 = self.client.get('/Attendance/random/', format='json', follow=True, HTTP_AUTHORIZATION=self.token)
         content2 = json.loads(response2.content)
-        print(response2.status_code)
+        print(content2)
         self.assertTrue(status.is_success(response2.status_code))
-
