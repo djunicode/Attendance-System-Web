@@ -65,7 +65,7 @@ CORS_ORIGIN_WHITELIST = (
     'http://127.0.0.1:8000/',
 )
 
-CORS_ALLOW_METHODS = ( 
+CORS_ALLOW_METHODS = (
     'GET',
     'DELETE',
     'OPTIONS',
