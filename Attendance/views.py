@@ -7,7 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, JsonResponse
 import json
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.authtoken.models import Token
 
 from rest_framework import generics, status
 from .models import Teacher, Student, Lecture, Div, Subject, SubjectTeacher
@@ -124,6 +125,7 @@ class DivisionDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class LoginTeacherView(generics.GenericAPIView):
+    permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
         teacherID = request.POST.get('teacherID')
@@ -133,7 +135,8 @@ class LoginTeacherView(generics.GenericAPIView):
         user = authenticate(username=teacher.user.username, password=password)
 
         if user is not None:
-            # authenticate user
+            token, _ = Token.objects.get_or_create(user=user)
+            login(request, user)
             divisions = Div.objects.filter(classteacher=teacher)
             class_subjects = Subject.objects.filter(division__in=divisions).distinct()
             taught_subjects = []
@@ -148,6 +151,7 @@ class LoginTeacherView(generics.GenericAPIView):
                     taught_subjects.append((str(div), SubjectSerializer(st.subject).data))
 
             response_data = {
+                'token': token.key,
                 'taught_subjects': json.dumps(taught_subjects),
                 'class_subjects': SubjectSerializer(class_subjects, many=True).data,
                 'division_they_are_class_teacher_of': DivSerializer(division).data,
@@ -156,3 +160,12 @@ class LoginTeacherView(generics.GenericAPIView):
         else:
             response_data = {'error_message': "Cannot log you in"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RandomView(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        return JsonResponse({
+            'success': True,
+        })
