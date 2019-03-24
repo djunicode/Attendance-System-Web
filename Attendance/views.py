@@ -128,8 +128,15 @@ class LoginTeacherView(generics.GenericAPIView):
     permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
-        teacherID = request.POST.get('teacherID')
-        password = request.POST.get('password')
+
+        print("\n\nForm Data:")
+        print(request.body)
+        print("\n\n")
+
+        form_data = json.loads(request.body.decode())
+
+        teacherID = form_data['teacherId']
+        password = form_data['password']
 
         teacher = Teacher.objects.get(teacherID=teacherID)
         user = authenticate(username=teacher.user.username, password=password)
