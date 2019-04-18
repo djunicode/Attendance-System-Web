@@ -26,7 +26,7 @@ SECRET_KEY = 'j6f+h$0ejyia5bd3n^b6b031ltb_*v3stcv-h1k(1=#8(xoanh'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['10.120.105.66', 'localhost:8000']
 
 
 # Application definition
@@ -62,7 +62,7 @@ ROOT_URLCONF = 'attendance_system.urls'
 CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_ORIGIN_WHITELIST = (
-    'http://127.0.0.1:8000/',
+    'http://127.0.0.1:8000/', '10.120.105.66',
 )
 
 CORS_ALLOW_METHODS = (
@@ -145,6 +145,14 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated'
+    ),
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/

@@ -11,8 +11,10 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
 
 from rest_framework import generics, status
-from .models import Teacher, Student, Lecture, Div, Subject, SubjectTeacher
+from .models import Teacher, Student, Lecture, Div, Subject, SubjectTeacher, AppUser, StudentLecture, StudentDivision
 from .serializers import TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer
+from rest_framework.authentication import TokenAuthentication
+import datetime
 
 
 class HomePage(TemplateView):
@@ -124,15 +126,55 @@ class DivisionDetailView(generics.RetrieveUpdateDestroyAPIView):
         return Div.objects.all().filter(user=self.request.user)
 
 
+class TeachersSubjectDataView(generics.GenericAPIView):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+
+        teacherId = kwargs['teacherId']
+
+        try:
+            teacher = Teacher.objects.get(teacherID=teacherId)
+        except Exception as e:
+            response_data = {'error_message': "Invalid TeacherId" + str(e)}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        divisions = Div.objects.filter(classteacher=teacher)
+        class_subjects = []
+        for div in divisions:
+            class_subjects_ordereddict = Subject.objects.filter(division=div).distinct()
+            for subject in class_subjects_ordereddict:
+                subject_json = SubjectSerializer(subject).data
+                subject_json["div"] = str(div)
+                class_subjects.append(subject_json)
+
+        taught_subjects = []
+
+        subjectteacher = SubjectTeacher.objects.filter(teacher=teacher)
+        for st in subjectteacher:
+            subject_json = SubjectSerializer(st.subject).data
+            subject_json["div"] = str(st.div)
+            taught_subjects.append(subject_json)
+
+        division = None
+        for div in divisions:
+            if div.get_class_type() == "Class":
+                division = div
+
+        response_data = {
+            'taught_subjects': taught_subjects,
+            'class_subjects': class_subjects,
+            'division_they_are_class_teacher_of': DivSerializer(division).data,
+        }
+
+        return JsonResponse(response_data, status=status.HTTP_200_OK)
+
+
 class LoginTeacherView(generics.GenericAPIView):
     permission_classes = (AllowAny,)
-    # serializer_class = TeacherSerializer
 
     def post(self, request, *args, **kwargs):
-
-        print("\n\nForm Data:")
-        print(request.body)
-        print("\n\n")
 
         form_data = json.loads(request.body.decode())
 
@@ -145,44 +187,133 @@ class LoginTeacherView(generics.GenericAPIView):
         if user is not None:
             token, _ = Token.objects.get_or_create(user=user)
             login(request, user)
-            divisions = Div.objects.filter(classteacher=teacher)
-            class_subjects = Subject.objects.filter(division__in=divisions).distinct()
-            taught_subjects = []
-
-            division = None
-            for div in divisions:
-                if div.get_class_type() == "Class":
-                    division = div
-
-                subjectteacher = SubjectTeacher.objects.filter(teacher=teacher, div=div)
-                for st in subjectteacher:
-                    taught_subjects.append((str(div), SubjectSerializer(st.subject).data))
 
             response_data = {
                 'token': token.key,
-                'taught_subjects': json.dumps(taught_subjects),
-                'class_subjects': SubjectSerializer(class_subjects, many=True).data,
-                'division_they_are_class_teacher_of': DivSerializer(division).data,
             }
 
-            print(response_data)
             return JsonResponse(response_data, status=status.HTTP_200_OK)
         else:
             response_data = {'error_message': "Cannot log you in"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
 
-class RandomView(generics.GenericAPIView):
-    permission_classes = (IsAuthenticated,)
+# class RandomView(generics.GenericAPIView):
+#     permission_classes = (IsAuthenticated,)
+
+#     def post(self, request, *args, **kwargs):
+#         # return JsonResponse({
+#         #     'success': True,
+#         # })
+
+#         print("\n\nForm Data:")
+#         print(request.body)
+#         print("\n\n")
+
+#         form_data = json.loads(request.body.decode())
+
+class SignUpTeacherView(generics.GenericAPIView):
+    permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
-        # return JsonResponse({
-        #     'success': True,
-        # })
-
-        print("\n\nForm Data:")
-        print(request.body)
-        print("\n\n")
 
         form_data = json.loads(request.body.decode())
 
+        teacherId = form_data['teacherId']
+        password = form_data['password']
+        f_name = form_data['fname']
+        l_name = form_data['lname']
+        specialization = form_data['spec']
+        # email = form_data['email']
+
+        try:
+            user = AppUser.objects.create(username=teacherId, password=password)
+            user.first_name = f_name
+            user.last_name = l_name
+            user.set_password(password)
+            user.is_teacher = True
+            user.save()
+            teacher = Teacher.objects.create(user=user, teacherID=teacherId, specialization=specialization)
+            teacher.save()
+
+            login(request, user)
+
+            token, _ = Token.objects.get_or_create(user=user)
+
+            response_data = {
+                'token': token.key,
+            }
+            return JsonResponse(response_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            response_data = {'error_message': "Cannot sign you up due to " + str(e)}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GetAttendanceOfDay(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+
+        subject = kwargs['subject']
+        div = kwargs['div']
+        try:
+            date = kwargs['date']
+            d, m, y = date.split('\\')
+            date = datetime.datetime(y, m, d).date()
+        except KeyError:
+            date = datetime.date.today()
+
+        subject_code, subject_name = subject.split(': ')
+        yearname, division = div.split("_")
+
+        try:
+            subject = Subject.objects.get(subjectCode=subject_code, subject_name=subject_name)
+            div = Div.objects.get(division=division, year=yearname)
+
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Div.DoesNotExist:
+            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        print(date, subject_code, subject_name, yearname, division)
+
+        teacher = Teacher.objects.get(user=request.user)
+
+        lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject)
+        if lecs:
+            student_lecs = StudentLecture.objects.filter(lecture__in=lecs)
+            present_students = [sl.student for sl in student_lecs]
+
+            student_divs = StudentDivision.objects.filter(division=div)
+            div_students = [sd.student for sd in student_divs]
+
+            absent_students = list(set(div_students) - set(present_students))
+
+            attendance_list = []
+
+            for student in present_students:
+                student_json = StudentSerializer(student).data
+                student_json["attendance"] = 1
+                attendance_list.append(student_json)
+
+            for student in absent_students:
+                student_json = StudentSerializer(student).data
+                student_json["attendance"] = 0
+                attendance_list.append(student_json)
+            attendance_list.sort(key=lambda x: x["sapID"])
+
+            response_data = {
+                'attendance': attendance_list,
+            }
+            return JsonResponse(response_data, status=status.HTTP_200_OK)
+
+        else:
+            response_data = {'error_message': "No Lectures on this day"}
+            return JsonResponse(response_data, status=status.HTTP_200_OK)
+
+        response_data = {}
+
+        return JsonResponse(response_data, status=status.HTTP_200_OK)

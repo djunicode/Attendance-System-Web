@@ -53,7 +53,7 @@ class Div(models.Model):
             yearname = "TE"
         elif semester <= 8:
             yearname = "BE"
-        return yearname + " " + self.division
+        return yearname + "_" + self.division
 
     def get_class_type(self):
         if len(self.division) is 1:
