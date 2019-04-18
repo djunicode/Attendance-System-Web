@@ -25,7 +25,7 @@ urlpatterns = [
     path('login-teacher/', views.LoginTeacherView.as_view(), name='login-teacher'),
     path('signup-teacher/', views.SignUpTeacherView.as_view(), name='signup-teacher'),
     path('dashboard-teacher/<int:teacherId>', views.TeachersSubjectDataView.as_view(), name='dashboard-teacher'),
-    path('get-attendance-of-day/<str:subject>/<str:div>/<str:date>/',
+    path('get-attendance-of-day/<str:subject>/<str:div>/<str:date>',
          views.GetAttendanceOfDay.as_view(), name='day-attendance'),
     # path('random/', views.RandomView.as_view(), name='random'),
 ]

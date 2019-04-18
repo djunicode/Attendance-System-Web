@@ -254,21 +254,24 @@ class GetAttendanceOfDay(generics.GenericAPIView):
 
     def get(self, request, *args, **kwargs):
 
-        subject = kwargs['subject']
+        subject_name = kwargs['subject']
         div = kwargs['div']
         try:
             date = kwargs['date']
-            d, m, y = date.split('\\')
-            date = datetime.datetime(y, m, d).date()
+            d, m, y = date.split('-')
+            date = datetime.datetime(int(y), int(m), int(d)).date()
         except KeyError:
             date = datetime.date.today()
 
-        subject_code, subject_name = subject.split(': ')
         yearname, division = div.split("_")
-
+        year = Div.yearnameToYear(yearname)
+        if date.month < 6:
+            semester = year * 2
+        else:
+            semester = year * 2 - 1
         try:
-            subject = Subject.objects.get(subjectCode=subject_code, subject_name=subject_name)
-            div = Div.objects.get(division=division, year=yearname)
+            subject = Subject.objects.get(name=subject_name)
+            div = Div.objects.get(division=division, year=year, semester=semester)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -278,7 +281,7 @@ class GetAttendanceOfDay(generics.GenericAPIView):
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        print(date, subject_code, subject_name, yearname, division)
+        print(date, subject_name, yearname, division)
 
         teacher = Teacher.objects.get(user=request.user)
 
@@ -303,6 +306,7 @@ class GetAttendanceOfDay(generics.GenericAPIView):
                 student_json = StudentSerializer(student).data
                 student_json["attendance"] = 0
                 attendance_list.append(student_json)
+
             attendance_list.sort(key=lambda x: x["sapID"])
 
             response_data = {

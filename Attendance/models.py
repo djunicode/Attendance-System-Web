@@ -63,6 +63,17 @@ class Div(models.Model):
         else:
             return "Elective"
 
+    @staticmethod
+    def yearnameToYear(yearname):
+        if yearname == "FE":
+            year = 1
+        elif yearname == "SE":
+            year = 2
+        elif yearname == "TE":
+            year = 3
+        elif yearname == "BE":
+            year = 4
+        return year
 
 class Lecture(models.Model):
     roomNumber = models.CharField(max_length=10, blank=True)
@@ -87,6 +98,9 @@ class Student(models.Model):
 
     def __str__(self):
         return self.user.getfullname()
+
+    def getfullname(self):
+        return self.user.first_name + ' ' + self.user.last_name
 
 
 class StudentLecture(models.Model):
