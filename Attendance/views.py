@@ -126,6 +126,7 @@ class DivisionDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class LoginTeacherView(generics.GenericAPIView):
     permission_classes = (AllowAny,)
+    # serializer_class = TeacherSerializer
 
     def post(self, request, *args, **kwargs):
 
@@ -163,7 +164,9 @@ class LoginTeacherView(generics.GenericAPIView):
                 'class_subjects': SubjectSerializer(class_subjects, many=True).data,
                 'division_they_are_class_teacher_of': DivSerializer(division).data,
             }
-            return JsonResponse(response_data)
+
+            print(response_data)
+            return JsonResponse(response_data, status=status.HTTP_200_OK)
         else:
             response_data = {'error_message': "Cannot log you in"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
@@ -172,7 +175,14 @@ class LoginTeacherView(generics.GenericAPIView):
 class RandomView(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, *args, **kwargs):
-        return JsonResponse({
-            'success': True,
-        })
+    def post(self, request, *args, **kwargs):
+        # return JsonResponse({
+        #     'success': True,
+        # })
+
+        print("\n\nForm Data:")
+        print(request.body)
+        print("\n\n")
+
+        form_data = json.loads(request.body.decode())
+
