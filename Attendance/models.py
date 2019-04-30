@@ -87,7 +87,7 @@ class Lecture(models.Model):
     def __str__(self):
         start = self.startTime.strftime("%H:%M %p")
         end = self.endTime.strftime("%H:%M %p")
-        return str(self.lectureClass) + " " + start + '-' + end
+        return str(self.div) + " " + start + '-' + end
 
 
 class Student(models.Model):

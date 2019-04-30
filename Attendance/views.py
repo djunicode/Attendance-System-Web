@@ -281,8 +281,6 @@ class GetAttendanceOfDay(generics.GenericAPIView):
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        print(date, subject_name, yearname, division)
-
         teacher = Teacher.objects.get(user=request.user)
 
         lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject)
