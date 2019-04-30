@@ -103,4 +103,4 @@ venv.bak/
 .mypy_cache/
 .vscode/settings.json
 
-attendance_system/settings.py
+attendance_system/localDBsettings.py
