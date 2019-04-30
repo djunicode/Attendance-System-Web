@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
-from . import localDBsettings
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -109,21 +108,38 @@ WSGI_APPLICATION = 'attendance_system.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
-DATABASES = {
-    # create a file attendance_system/localDBsettings.py with the following in it:
-    # default_database = {
-    #     'ENGINE': 'django.db.backends.mysql',
-    #     'NAME': '',
-    #     'USER': '',
-    #     'PASSWORD': '',
-    #     'HOST': 'localhost',
-    #     'PORT': '3306',
-    #     'OPTIONS': {
-    #         'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-    #     }
-    # }
-    'default': localDBsettings.default_database,
-}
+try:
+    from . import localDBsettings
+    DATABASES = {
+        # create a file attendance_system/localDBsettings.py with the following in it:
+        # default_database = {
+        #     'ENGINE': 'django.db.backends.mysql',
+        #     'NAME': '',
+        #     'USER': '',
+        #     'PASSWORD': '',
+        #     'HOST': 'localhost',
+        #     'PORT': '3306',
+        #     'OPTIONS': {
+        #         'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        #     }
+        # }
+        'default': localDBsettings.default_database,
+    }
+
+except ImportError:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'attendance_system',
+            'USER': 'xyz',
+            'PASSWORD': 'pass@123',
+            'HOST': 'localhost',
+            'PORT': '3306',
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            }
+        },
+    }
 
 # DATABASES = {
 #     'default': {
