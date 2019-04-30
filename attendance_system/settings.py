@@ -26,7 +26,7 @@ SECRET_KEY = 'j6f+h$0ejyia5bd3n^b6b031ltb_*v3stcv-h1k(1=#8(xoanh'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['10.120.105.66', 'localhost']
+ALLOWED_HOSTS = ['10.120.105.66', 'localhost', 'wizdem.pythonanywhere.com']
 
 
 # Application definition
@@ -111,11 +111,14 @@ WSGI_APPLICATION = 'attendance_system.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'attendance_system',
-        'USER': 'xyz',
+        'NAME': 'wizdem$attendanceDB',
+        'USER': 'wizdem',
         'PASSWORD': 'pass@123',
-        'HOST': 'localhost',
+        'HOST': 'wizdem.mysql.pythonanywhere-services.com',
         'PORT': '3306',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 
