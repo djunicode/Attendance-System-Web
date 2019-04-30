@@ -178,13 +178,13 @@ class LoginTeacherView(generics.GenericAPIView):
 
         try:
             form_data = json.loads(request.body.decode())
-            teacherID = form_data['teacherId']
+            teacherId = form_data['teacherId']
             password = form_data['password']
         except Exception:
-            teacherID = request.POST.get('teacherId')
+            teacherId = request.POST.get('teacherId')
             password = request.POST.get('password')
 
-        teacher = Teacher.objects.get(teacherID=teacherID)
+        teacher = Teacher.objects.get(teacherID=teacherId)
         user = authenticate(username=teacher.user.username, password=password)
 
         if user is not None:
@@ -220,14 +220,19 @@ class SignUpTeacherView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
 
-        form_data = json.loads(request.body.decode())
-
-        teacherId = form_data['teacherId']
-        password = form_data['password']
-        f_name = form_data['fname']
-        l_name = form_data['lname']
-        specialization = form_data['spec']
-        # email = form_data['email']
+        try:
+            form_data = json.loads(request.body.decode())
+            teacherId = form_data['teacherId']
+            password = form_data['password']
+            f_name = form_data['fname']
+            l_name = form_data['lname']
+            specialization = form_data['spec']
+        except Exception:
+            teacherId = request.POST.get('teacherId')
+            password = request.POST.get('password')
+            f_name = request.POST.get('fname')
+            l_name = request.POST.get('lname')
+            specialization = request.POST.get('spec')
 
         try:
             user = AppUser.objects.create(username=teacherId, password=password)

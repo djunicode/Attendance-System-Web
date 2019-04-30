@@ -25,3 +25,11 @@ class UserAPITestCase(TestCase):
         print(content)
         self.token = content['token']
         self.assertTrue(status.is_success(response.status_code))
+
+    def test_signup_teacher(self):
+        data = {'teacherId': 900016, 'password': "ag@12345", 'fname': 'Ankit', 'lname': 'Gupta', 'spec': 'Everything'}
+        response = self.client.post('/Attendance/signup-teacher/', data, format='json', follow=True)
+        content = json.loads(response.content)
+        print(content)
+        self.token = content['token']
+        self.assertTrue(status.is_success(response.status_code))
