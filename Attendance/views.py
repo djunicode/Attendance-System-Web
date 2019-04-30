@@ -310,12 +310,10 @@ class GetAttendanceOfDay(generics.GenericAPIView):
             response_data = {
                 'attendance': attendance_list,
             }
-            return JsonResponse(response_data, status=status.HTTP_200_OK)
 
         else:
-            response_data = {'error_message': "No Lectures on this day"}
-            return JsonResponse(response_data, status=status.HTTP_200_OK)
-
-        response_data = {}
+            response_data = {
+                'attendance': [],
+            }
 
         return JsonResponse(response_data, status=status.HTTP_200_OK)
