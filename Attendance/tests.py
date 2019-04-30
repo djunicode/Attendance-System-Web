@@ -19,7 +19,7 @@ class UserAPITestCase(TestCase):
         )
 
     def test_login_teacher(self):
-        data = {'teacherID': 900015, 'password': "pb@12345"}
+        data = {'teacherID': 90000000015, 'password': "pass@123"}
         response = self.client.post('/Attendance/login-teacher/', data, format='json', follow=True)
         content = json.loads(response.content)
         print(content)
