@@ -111,10 +111,10 @@ WSGI_APPLICATION = 'attendance_system.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'wizdem$attendanceDB',
-        'USER': 'wizdem',
+        'NAME': 'attendance_system',
+        'USER': 'xyz',
         'PASSWORD': 'pass@123',
-        'HOST': 'wizdem.mysql.pythonanywhere-services.com',
+        'HOST': 'localhost',
         'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
