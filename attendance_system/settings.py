@@ -62,7 +62,7 @@ ROOT_URLCONF = 'attendance_system.urls'
 CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_ORIGIN_WHITELIST = (
-    'http://127.0.0.1:8000/', '10.120.105.66', 'localhost'
+    '127.0.0.1', '10.120.105.66', 'localhost'
 )
 
 CORS_ALLOW_METHODS = (
