@@ -29,7 +29,9 @@ urlpatterns = [
     path('get-attendance-of-day/<str:subject>/<str:div>/<str:date>',
          views.GetAttendanceOfDay.as_view(), name='day-attendance'),
     path('get-attendance-of-range/<str:subject>/<str:div>/<str:date_from>/<str:date_to>',
-         views.GetAttendanceOfDay.as_view(), name='day-attendance'),
+         views.GetAttendanceOfRange.as_view(), name='range-attendance'),
     path('get-attendance-of-student/<str:subject>/<int:sapID>',
-         views.GetAttendanceOfDay.as_view(), name='day-attendance'),
+         views.GetAttendanceOfStudent.as_view(), name='student-attendance'),
+    path('edit-attendance-of-day/<str:subject>/<str:div>/<str:date>',
+         views.EditAttendanceOfDay.as_view(), name='edit-attendance'),
 ]

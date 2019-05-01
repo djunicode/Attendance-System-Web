@@ -15,6 +15,7 @@ from .models import Teacher, Student, Lecture, Div, Subject, SubjectTeacher, App
 from .serializers import TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer
 from rest_framework.authentication import TokenAuthentication
 import datetime
+import time
 
 
 class HomePage(TemplateView):
@@ -293,8 +294,12 @@ class GetAttendanceOfDay(generics.GenericAPIView):
         else:
             lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject)
 
-        if lecs:
-            student_lecs = StudentLecture.objects.filter(lecture__in=lecs)
+        attendance_list = {}
+
+        for lec in lecs:
+            lecTime = lec.getTimeString()
+            attendance_list[lecTime] = []
+            student_lecs = StudentLecture.objects.filter(lecture=lec)
             present_students = [sl.student for sl in student_lecs]
 
             student_divs = StudentDivision.objects.filter(division=div)
@@ -302,28 +307,21 @@ class GetAttendanceOfDay(generics.GenericAPIView):
 
             absent_students = list(set(div_students) - set(present_students))
 
-            attendance_list = []
-
             for student in present_students:
                 student_json = StudentSerializer(student).data
                 student_json["attendance"] = 1
-                attendance_list.append(student_json)
+                attendance_list[lecTime].append(student_json)
 
             for student in absent_students:
                 student_json = StudentSerializer(student).data
                 student_json["attendance"] = 0
-                attendance_list.append(student_json)
+                attendance_list[lecTime].append(student_json)
 
-            attendance_list.sort(key=lambda x: x["sapID"])
+            attendance_list[lecTime].sort(key=lambda x: x["sapID"])
 
-            response_data = {
-                'attendance': attendance_list,
-            }
-
-        else:
-            response_data = {
-                'attendance': [],
-            }
+        response_data = {
+            'attendance': attendance_list,
+        }
 
         return JsonResponse(response_data, status=status.HTTP_200_OK)
 
@@ -464,4 +462,70 @@ class GetAttendanceOfStudent(generics.GenericAPIView):
                 'attendance': [],
             }
 
+        return JsonResponse(response_data, status=status.HTTP_200_OK)
+
+
+class EditAttendanceOfDay(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+
+        subject_name = kwargs['subject']
+        div = kwargs['div']
+
+        try:
+            form_data = json.loads(request.body.decode())
+            attendance_list = form_data['attendance_list']
+        except Exception:
+            attendance_list = request.POST.get('attendance_list')
+
+        try:
+            date = kwargs['date']
+            d, m, y = date.split('-')
+            date = datetime.datetime(int(y), int(m), int(d)).date()
+        except KeyError:
+            date = datetime.date.today()
+
+        yearname, division = div.split("_")
+        year = Div.yearnameToYear(yearname)
+        if date.month < 6:
+            semester = year * 2
+        else:
+            semester = year * 2 - 1
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            div = Div.objects.get(division=division, year=year, semester=semester)
+
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Div.DoesNotExist:
+            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        teacher = Teacher.objects.get(user=request.user)
+
+        if div.classteacher is teacher:
+            lecs = Lecture.objects.filter(date=date, div=div, subject=subject)
+        else:
+            lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject)
+
+        for lecTime in attendance_list:
+            current_lecture = None
+            for lec in lecs:
+                if lec.getTimeString() == lecTime:
+                    current_lecture = lec
+
+            for student_entry in attendance_list[lecTime]:
+                if int(student_entry.attendance) == 1:
+                    StudentLecture.objects.get_or_create(student_id=student_entry.id, lecture=current_lecture)
+                else:
+                    try:
+                        sl = StudentLecture.objects.get(student_id=student_entry.id, lecture=current_lecture)
+                        sl.delete()
+                    except StudentLecture.DoesNotExist:
+                        pass
+
+        response_data = {'success_message': 'Successfully saved attendance data'}
         return JsonResponse(response_data, status=status.HTTP_200_OK)

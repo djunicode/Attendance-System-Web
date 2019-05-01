@@ -86,9 +86,10 @@ class Lecture(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.PROTECT)
 
     def __str__(self):
-        start = self.startTime.strftime("%H:%M %p")
-        end = self.endTime.strftime("%H:%M %p")
-        return str(self.div) + " " + start + '-' + end
+        return str(self.div) + " " + self.getTimeString()
+
+    def getTimeString(self):
+        return self.startTime.strftime("%H:%M %p") + " - " + self.endTime.strftime("%H:%M %p")
 
 
 class Student(models.Model):
