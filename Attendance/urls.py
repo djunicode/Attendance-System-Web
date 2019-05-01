@@ -23,9 +23,11 @@ urlpatterns = [
     path('divisions/<int:pk>/', views.DivisionDetailView.as_view(), name='division-details'),
 
     path('login-teacher/', views.LoginTeacherView.as_view(), name='login-teacher'),
+    path('logout-teacher/', views.LogoutTeacherView.as_view(), name='logout-teacher'),
     path('signup-teacher/', views.SignUpTeacherView.as_view(), name='signup-teacher'),
     path('dashboard-teacher/<int:teacherId>', views.TeachersSubjectDataView.as_view(), name='dashboard-teacher'),
     path('get-attendance-of-day/<str:subject>/<str:div>/<str:date>',
          views.GetAttendanceOfDay.as_view(), name='day-attendance'),
-    # path('random/', views.RandomView.as_view(), name='random'),
+    path('get-attendance-of-range/<str:subject>/<str:div>/<str:date_from>/<str:date_to>',
+         views.GetAttendanceOfDay.as_view(), name='day-attendance'),
 ]

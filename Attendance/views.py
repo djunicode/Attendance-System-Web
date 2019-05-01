@@ -201,19 +201,16 @@ class LoginTeacherView(generics.GenericAPIView):
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
 
-# class RandomView(generics.GenericAPIView):
-#     permission_classes = (IsAuthenticated,)
+class LogoutTeacherView(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
 
-#     def post(self, request, *args, **kwargs):
-#         # return JsonResponse({
-#         #     'success': True,
-#         # })
+    def get(self, request):
+        # simply delete the token to force a login
+        request.user.auth_token.delete()
+        logout(request)
+        response_data = {'success_message': 'Successfully logged you out'}
+        return JsonResponse(response_data, status=status.HTTP_200_OK)
 
-#         print("\n\nForm Data:")
-#         print(request.body)
-#         print("\n\n")
-
-#         form_data = json.loads(request.body.decode())
 
 class SignUpTeacherView(generics.GenericAPIView):
     permission_classes = (AllowAny,)
@@ -311,6 +308,76 @@ class GetAttendanceOfDay(generics.GenericAPIView):
             for student in absent_students:
                 student_json = StudentSerializer(student).data
                 student_json["attendance"] = 0
+                attendance_list.append(student_json)
+
+            attendance_list.sort(key=lambda x: x["sapID"])
+
+            response_data = {
+                'attendance': attendance_list,
+            }
+
+        else:
+            response_data = {
+                'attendance': [],
+            }
+
+        return JsonResponse(response_data, status=status.HTTP_200_OK)
+
+
+class GetAttendanceOfRange(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+
+        subject_name = kwargs['subject']
+        div = kwargs['div']
+        try:
+            date_from = kwargs['date_from']
+            d, m, y = date_from.split('-')
+            date_from = datetime.datetime(int(y), int(m), int(d)).date()
+            date_to = kwargs['date_to']
+            d, m, y = date_to.split('-')
+            date_to = datetime.datetime(int(y), int(m), int(d)).date()
+        except KeyError:
+            date_to = datetime.date.today()
+
+        yearname, division = div.split("_")
+        year = Div.yearnameToYear(yearname)
+
+        if date_from.month < 6 and date_to.month < 6:
+            semester = year * 2
+        elif date_from.month > 6 and date_to.month > 6:
+            semester = year * 2 - 1
+        else:
+            response_data = {'error_message': "Dates are not from the same semester."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            div = Div.objects.get(division=division, year=year, semester=semester)
+
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Div.DoesNotExist:
+            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        teacher = Teacher.objects.get(user=request.user)
+
+        lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, teacher=teacher, div=div, subject=subject)
+        if lecs:
+            student_list = Student.objects.filter(div=div)
+            student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
+
+            attendance_list = []
+
+            for student in student_list:
+                relevant_student_lectures = student_lectures.filter(student=student)
+                student_json = StudentSerializer(student).data
+                student_json["attendance_count"] = len(relevant_student_lectures)
+                student_json["attendance_percentage"] = len(relevant_student_lectures) * 100 / len(lecs)
                 attendance_list.append(student_json)
 
             attendance_list.sort(key=lambda x: x["sapID"])

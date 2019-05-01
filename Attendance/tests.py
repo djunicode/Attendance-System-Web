@@ -1,8 +1,9 @@
 from django.test import TestCase, Client
-from rest_framework.test import APIRequestFactory
+from rest_framework.test import APIRequestFactory, force_authenticate
 from .models import AppUser, Teacher, Student, Lecture, Div, Subject
 import json
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 
 # Create your tests here.
 
@@ -23,7 +24,7 @@ class UserAPITestCase(TestCase):
         response = self.client.post('/Attendance/login-teacher/', data, format='json', follow=True)
         content = json.loads(response.content)
         print(content)
-        self.token = content['token']
+        self.token = Token.objects.get(key=content['token'])
         self.assertTrue(status.is_success(response.status_code))
 
     def test_signup_teacher(self):
@@ -31,5 +32,5 @@ class UserAPITestCase(TestCase):
         response = self.client.post('/Attendance/signup-teacher/', data, format='json', follow=True)
         content = json.loads(response.content)
         print(content)
-        self.token = content['token']
+        self.token = Token.objects.get(key=content['token'])
         self.assertTrue(status.is_success(response.status_code))
