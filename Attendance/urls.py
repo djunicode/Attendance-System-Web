@@ -30,4 +30,6 @@ urlpatterns = [
          views.GetAttendanceOfDay.as_view(), name='day-attendance'),
     path('get-attendance-of-range/<str:subject>/<str:div>/<str:date_from>/<str:date_to>',
          views.GetAttendanceOfDay.as_view(), name='day-attendance'),
+    path('get-attendance-of-student/<str:subject>/<int:sapID>',
+         views.GetAttendanceOfDay.as_view(), name='day-attendance'),
 ]

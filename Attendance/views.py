@@ -288,7 +288,11 @@ class GetAttendanceOfDay(generics.GenericAPIView):
 
         teacher = Teacher.objects.get(user=request.user)
 
-        lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject)
+        if div.classteacher is teacher:
+            lecs = Lecture.objects.filter(date=date, div=div, subject=subject)
+        else:
+            lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject)
+
         if lecs:
             student_lecs = StudentLecture.objects.filter(lecture__in=lecs)
             present_students = [sl.student for sl in student_lecs]
@@ -371,7 +375,12 @@ class GetAttendanceOfRange(generics.GenericAPIView):
 
         teacher = Teacher.objects.get(user=request.user)
 
-        lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, teacher=teacher, div=div, subject=subject)
+        if div.classteacher is teacher:
+            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject)
+        else:
+            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, teacher=teacher,
+                                          div=div, subject=subject)
+
         if lecs:
             student_list = Student.objects.filter(div=div)
             student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
@@ -386,6 +395,65 @@ class GetAttendanceOfRange(generics.GenericAPIView):
                 attendance_list.append(student_json)
 
             attendance_list.sort(key=lambda x: x["sapID"])
+
+            response_data = {
+                'attendance': attendance_list,
+            }
+
+        else:
+            response_data = {
+                'attendance': [],
+            }
+
+        return JsonResponse(response_data, status=status.HTTP_200_OK)
+
+
+class GetAttendanceOfStudent(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+
+        subject_name = kwargs['subject']
+        student_sap = int(kwargs['sapID'])
+
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            student = Student.objects.get(sapID=student_sap)
+
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Student.DoesNotExist:
+            response_data = {'error_message': "Student with SAP " + str(student_sap) + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        divs = list(student.div.all())
+
+        class_teacher_list = [div.classteacher for div in divs]
+
+        teacher = Teacher.objects.get(user=request.user)
+
+        if teacher in class_teacher_list:
+            lecs = Lecture.objects.filter(div__in=divs, subject=subject)
+        else:
+            lecs = Lecture.objects.filter(teacher=teacher, div__in=divs, subject=subject)
+
+        if lecs:
+            lecs = list(lecs)
+            lecs.sort(key=lambda x: x.date)
+
+            attendance_list = []
+
+            for lecture in lecs:
+                lecture_json = LectureSerializer(lecture).data
+                lecture_json["date"] = "-".join(lecture_json["date"].split('-')[::-1])
+                try:
+                    StudentLecture.objects.get(student=student, lecture=lecture)
+                    lecture_json["attendance"] = 1
+                except StudentLecture.DoesNotExist:
+                    lecture_json["attendance"] = 0
+                attendance_list.append(lecture_json)
 
             response_data = {
                 'attendance': attendance_list,
