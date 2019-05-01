@@ -331,10 +331,15 @@ class GetAttendanceOfRange(generics.GenericAPIView):
 
         subject_name = kwargs['subject']
         div = kwargs['div']
+
         try:
             date_from = kwargs['date_from']
             d, m, y = date_from.split('-')
             date_from = datetime.datetime(int(y), int(m), int(d)).date()
+        except KeyError:
+            date_from = datetime.date.today()
+
+        try:
             date_to = kwargs['date_to']
             d, m, y = date_to.split('-')
             date_to = datetime.datetime(int(y), int(m), int(d)).date()
