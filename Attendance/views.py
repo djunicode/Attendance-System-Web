@@ -527,11 +527,12 @@ class EditAttendanceOfDay(generics.GenericAPIView):
                     current_lecture = lec
 
             for student_entry in attendance_object['attendance_list']:
-                if int(student_entry.attendance) == 1:
-                    StudentLecture.objects.get_or_create(student_id=student_entry.id, lecture=current_lecture)
+                student = Student.objects.get(sapID=student_entry['sapID'])
+                if int(student_entry['attendance']) == 1:
+                    StudentLecture.objects.get_or_create(student=student, lecture=current_lecture)
                 else:
                     try:
-                        sl = StudentLecture.objects.get(student_id=student_entry.id, lecture=current_lecture)
+                        sl = StudentLecture.objects.get(student=student, lecture=current_lecture)
                         sl.delete()
                     except StudentLecture.DoesNotExist:
                         pass
