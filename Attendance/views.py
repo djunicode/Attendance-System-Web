@@ -16,6 +16,8 @@ from .serializers import TeacherSerializer, StudentSerializer, LectureSerializer
 from rest_framework.authentication import TokenAuthentication
 import datetime
 import time
+import csv
+from django.utils.encoding import smart_str
 
 
 class HomePage(TemplateView):
@@ -549,3 +551,78 @@ class EditAttendanceOfDay(generics.GenericAPIView):
 
         response_data = {'success_message': 'Successfully saved attendance data'}
         return JsonResponse(response_data, status=status.HTTP_200_OK)
+
+ class DownloadCsv(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        subject_name = kwargs['subject']
+        div = kwargs['div']
+
+        try:
+            date_from = kwargs['date_from']
+            d, m, y = date_from.split('-')
+            date_from = datetime.datetime(int(y), int(m), int(d)).date()
+        except KeyError:
+            date_from = datetime.date.today()
+
+        try:
+            date_to = kwargs['date_to']
+            d, m, y = date_to.split('-')
+            date_to = datetime.datetime(int(y), int(m), int(d)).date()
+        except KeyError:
+            date_to = datetime.date.today()
+
+        yearname, division = div.split("_")
+        year = Div.yearnameToYear(yearname)
+
+        if date_from.month < 6 and date_to.month < 6:
+            semester = year * 2
+        elif date_from.month > 6 and date_to.month > 6:
+            semester = year * 2 - 1
+        else:
+            response_data = {'error_message': "Dates are not from the same semester."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            div = Div.objects.get(division=division, year=year, semester=semester)
+
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Div.DoesNotExist:
+            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        teacher = Teacher.objects.get(user=request.user)
+
+        if div.classteacher is teacher:
+            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject)
+        else:
+            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, teacher=teacher,
+                                          div=div, subject=subject)
+
+        if lecs:
+            student_list = Student.objects.filter(div=div)
+            student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
+            attendance_list = []
+            for student in student_list:
+                relevant_student_lectures = student_lectures.filter(student=student)
+                student_json = StudentSerializer(student).data
+                student_json["attendance_count"] = len(relevant_student_lectures)
+                student_json["attendance_percentage"] = len(relevant_student_lectures) * 100 / len(lecs)
+                attendance_list.append(student_json)
+
+            attendance_list.sort(key=lambda x: x["sapID"])
+        att_data = open('AttendanceData.csv', 'w')
+        response = HttpResponse(att_data, content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="AttendanceData.csv"'
+        csvwriter = csv.writer(response, csv.excel)
+        response.write(u'\ufeff'.encode('utf8'))
+        csvwriter.writerow([smart_str(attendance_list[0].keys()), ])
+        for var in attendance_list:
+            csvwriter.writerow([smart_str(var.values()), ])
+        att_data.close()
+        return response
