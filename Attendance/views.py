@@ -552,7 +552,8 @@ class EditAttendanceOfDay(generics.GenericAPIView):
         response_data = {'success_message': 'Successfully saved attendance data'}
         return JsonResponse(response_data, status=status.HTTP_200_OK)
 
- class DownloadCsv(generics.GenericAPIView):
+
+class DownloadCsv(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -617,12 +618,12 @@ class EditAttendanceOfDay(generics.GenericAPIView):
 
             attendance_list.sort(key=lambda x: x["sapID"])
         att_data = open('AttendanceData.csv', 'w')
+        csvwriter = csv.writer(att_data, csv.excel)
+        # response.write(u'\ufeff'.encode('utf8'))
+        csvwriter.writerow(attendance_list[0].keys())
+        for var in attendance_list:
+            csvwriter.writerow(var.values())
+        att_data.close()
         response = HttpResponse(att_data, content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="AttendanceData.csv"'
-        csvwriter = csv.writer(response, csv.excel)
-        response.write(u'\ufeff'.encode('utf8'))
-        csvwriter.writerow([smart_str(attendance_list[0].keys()), ])
-        for var in attendance_list:
-            csvwriter.writerow([smart_str(var.values()), ])
-        att_data.close()
         return response

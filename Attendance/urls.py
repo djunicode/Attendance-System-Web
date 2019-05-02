@@ -34,5 +34,5 @@ urlpatterns = [
          views.GetAttendanceOfStudent.as_view(), name='student-attendance'),
     path('edit-attendance-of-day/<str:subject>/<str:div>/<str:date>',
          views.EditAttendanceOfDay.as_view(), name='edit-attendance'),
-    path('csv/<str:subject>/<str:div>/<str:date_from>/<str:date_to>', views.DownloadCsv.as_view(), name='get-csv'),
+    path('get_csv/<str:subject>/<str:div>/<str:date_from>/<str:date_to>', views.DownloadCsv.as_view(), name='get-csv'),
 ]
