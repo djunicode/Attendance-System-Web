@@ -319,8 +319,16 @@ class GetAttendanceOfDay(generics.GenericAPIView):
 
             attendance_list[lecTime].sort(key=lambda x: x["sapID"])
 
+        final_attendance_list = []
+
+        for lecTime in attendance_list:
+            attendance_object = {}
+            attendance_object['time'] = lecTime
+            attendance_object['attendance_list'] = attendance_list[lecTime]
+            final_attendance_list.append(attendance_object)
+
         response_data = {
-            'attendance': attendance_list,
+            'attendance': final_attendance_list,
         }
 
         return JsonResponse(response_data, status=status.HTTP_200_OK)
@@ -511,13 +519,14 @@ class EditAttendanceOfDay(generics.GenericAPIView):
         else:
             lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject)
 
-        for lecTime in attendance_list:
+        for attendance_object in attendance_list:
             current_lecture = None
+            lecTime = attendance_object['time']
             for lec in lecs:
                 if lec.getTimeString() == lecTime:
                     current_lecture = lec
 
-            for student_entry in attendance_list[lecTime]:
+            for student_entry in attendance_object['attendance_list']:
                 if int(student_entry.attendance) == 1:
                     StudentLecture.objects.get_or_create(student_id=student_entry.id, lecture=current_lecture)
                 else:
