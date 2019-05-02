@@ -17,7 +17,6 @@ from rest_framework.authentication import TokenAuthentication
 import datetime
 import time
 import csv
-from django.utils.encoding import smart_str
 
 
 class HomePage(TemplateView):
@@ -624,6 +623,7 @@ class DownloadCsv(generics.GenericAPIView):
         for var in attendance_list:
             csvwriter.writerow(var.values())
         att_data.close()
+        att_data = open('AttendanceData.csv', 'r')
         response = HttpResponse(att_data, content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="AttendanceData.csv"'
         return response
