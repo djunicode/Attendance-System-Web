@@ -450,6 +450,8 @@ class GetAttendanceOfStudent(generics.GenericAPIView):
             lecs.sort(key=lambda x: x.date)
 
             attendance_list = []
+            attendance_count = 0
+            attendance_total = 0
 
             for lecture in lecs:
                 lecture_json = LectureSerializer(lecture).data
@@ -457,12 +459,20 @@ class GetAttendanceOfStudent(generics.GenericAPIView):
                 try:
                     StudentLecture.objects.get(student=student, lecture=lecture)
                     lecture_json["attendance"] = 1
+                    attendance_count += 1
                 except StudentLecture.DoesNotExist:
                     lecture_json["attendance"] = 0
+
+                attendance_total += 1
                 attendance_list.append(lecture_json)
+
+            attendance_percentage = attendance_count * 100 / attendance_total
 
             response_data = {
                 'attendance': attendance_list,
+                'attendance_count': attendance_count,
+                'attendance_total': attendance_total,
+                'attendance_percentage': attendance_percentage,
             }
 
         else:
