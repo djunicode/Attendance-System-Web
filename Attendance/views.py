@@ -618,7 +618,7 @@ class DownloadCsv(generics.GenericAPIView):
             attendance_list.sort(key=lambda x: x["sapID"])
 
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="AttendanceData.csv"'
+        response['Content-Disposition'] = 'blob; filename="AttendanceData.csv"'
 
         csvwriter = csv.writer(response)
 
