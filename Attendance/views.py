@@ -616,14 +616,14 @@ class DownloadCsv(generics.GenericAPIView):
                 attendance_list.append(student_json)
 
             attendance_list.sort(key=lambda x: x["sapID"])
-        att_data = open('AttendanceData.csv', 'w')
-        csvwriter = csv.writer(att_data, csv.excel)
-        # response.write(u'\ufeff'.encode('utf8'))
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="AttendanceData.csv"'
+
+        csvwriter = csv.writer(response)
+
         csvwriter.writerow(attendance_list[0].keys())
         for var in attendance_list:
             csvwriter.writerow(var.values())
-        att_data.close()
-        att_data = open('AttendanceData.csv', 'r')
-        response = HttpResponse(att_data, content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="AttendanceData.csv"'
+
         return response
