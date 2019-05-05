@@ -26,7 +26,7 @@ SECRET_KEY = 'j6f+h$0ejyia5bd3n^b6b031ltb_*v3stcv-h1k(1=#8(xoanh'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['10.120.105.66', 'localhost', 'wizdem.pythonanywhere.com']
 
 
 # Application definition
@@ -59,10 +59,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'attendance_system.urls'
 
-CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_ORIGIN_WHITELIST = (
-    'http://127.0.0.1:8000/',
+    '127.0.0.1', '10.120.105.66', 'localhost'
 )
 
 CORS_ALLOW_METHODS = (
@@ -108,16 +108,38 @@ WSGI_APPLICATION = 'attendance_system.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'attendance_system',
-        'USER': 'xyz',
-        'PASSWORD': 'pass@123',
-        'HOST': 'localhost',
-        'PORT': '3306',
+try:
+    from . import localDBsettings
+    DATABASES = {
+        # create a file attendance_system/localDBsettings.py with the following in it:
+        # default_database = {
+        #     'ENGINE': 'django.db.backends.mysql',
+        #     'NAME': '',
+        #     'USER': '',
+        #     'PASSWORD': '',
+        #     'HOST': 'localhost',
+        #     'PORT': '3306',
+        #     'OPTIONS': {
+        #         'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        #     }
+        # }
+        'default': localDBsettings.default_database,
     }
-}
+
+except ImportError:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'attendance_system',
+            'USER': 'xyz',
+            'PASSWORD': 'pass@123',
+            'HOST': 'localhost',
+            'PORT': '3306',
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            }
+        },
+    }
 
 # DATABASES = {
 #     'default': {
@@ -145,6 +167,14 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated'
+    ),
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/

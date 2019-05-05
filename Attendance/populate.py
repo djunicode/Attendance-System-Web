@@ -111,14 +111,17 @@ def fillAll():
                 for d in prac_div:
                         StudentDivision.objects.create(student=student, division=d)
 
-        lectures = Lecture.objects.all()
         divisions = Div.objects.all()
+        weighted_random = [True] * 9 + [False] * 1
 
         for div in divisions:
                 studentdiv = StudentDivision.objects.filter(division=div)
+                lectures = Lecture.objects.filter(div=div)
                 for sd in studentdiv:
                         for lec in lectures:
-                                StudentLecture.objects.create(student=sd.student, lecture=lec)
+                                attended = random.choice(weighted_random)
+                                if attended:
+                                        StudentLecture.objects.create(student=sd.student, lecture=lec)
 
 
 # TO RUN THIS SCRIPT -

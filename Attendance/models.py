@@ -53,7 +53,7 @@ class Div(models.Model):
             yearname = "TE"
         elif semester <= 8:
             yearname = "BE"
-        return yearname + " " + self.division
+        return yearname + "_" + self.division
 
     def get_class_type(self):
         if len(self.division) is 1:
@@ -62,6 +62,18 @@ class Div(models.Model):
             return "Practical"
         else:
             return "Elective"
+
+    @staticmethod
+    def yearnameToYear(yearname):
+        if yearname == "FE":
+            year = 1
+        elif yearname == "SE":
+            year = 2
+        elif yearname == "TE":
+            year = 3
+        elif yearname == "BE":
+            year = 4
+        return year
 
 
 class Lecture(models.Model):
@@ -74,9 +86,10 @@ class Lecture(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.PROTECT)
 
     def __str__(self):
-        start = self.startTime.strftime("%H:%M %p")
-        end = self.endTime.strftime("%H:%M %p")
-        return str(self.lectureClass) + " " + start + '-' + end
+        return str(self.div) + " " + self.getTimeString()
+
+    def getTimeString(self):
+        return self.startTime.strftime("%H:%M %p") + " - " + self.endTime.strftime("%H:%M %p")
 
 
 class Student(models.Model):
@@ -87,6 +100,9 @@ class Student(models.Model):
 
     def __str__(self):
         return self.user.getfullname()
+
+    def getfullname(self):
+        return self.user.first_name + ' ' + self.user.last_name
 
 
 class StudentLecture(models.Model):
