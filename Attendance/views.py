@@ -604,18 +604,17 @@ class DownloadCsv(generics.GenericAPIView):
             lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, teacher=teacher,
                                           div=div, subject=subject)
 
-        if lecs:
-            student_list = Student.objects.filter(div=div)
-            student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
-            attendance_list = []
-            for student in student_list:
-                relevant_student_lectures = student_lectures.filter(student=student)
-                student_json = StudentSerializer(student).data
-                student_json["attendance_count"] = len(relevant_student_lectures)
-                student_json["attendance_percentage"] = len(relevant_student_lectures) * 100 / len(lecs)
-                attendance_list.append(student_json)
+        student_list = Student.objects.filter(div=div)
+        student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
+        attendance_list = []
+        for student in student_list:
+            relevant_student_lectures = student_lectures.filter(student=student)
+            student_json = StudentSerializer(student).data
+            student_json["attendance_count"] = len(relevant_student_lectures)
+            student_json["attendance_percentage"] = len(relevant_student_lectures) * 100 / len(lecs)
+            attendance_list.append(student_json)
 
-            attendance_list.sort(key=lambda x: x["sapID"])
+        attendance_list.sort(key=lambda x: x["sapID"])
 
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'blob; filename="AttendanceData.csv"'
