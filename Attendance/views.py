@@ -611,7 +611,10 @@ class DownloadCsv(generics.GenericAPIView):
             relevant_student_lectures = student_lectures.filter(student=student)
             student_json = StudentSerializer(student).data
             student_json["attendance_count"] = len(relevant_student_lectures)
-            student_json["attendance_percentage"] = len(relevant_student_lectures) * 100 / len(lecs)
+            if lecs:
+                student_json["attendance_percentage"] = len(relevant_student_lectures) * 100 / len(lecs)
+            else:
+                student_json["attendance_percentage"] = 100
             attendance_list.append(student_json)
 
         attendance_list.sort(key=lambda x: x["sapID"])
