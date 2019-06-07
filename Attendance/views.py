@@ -388,29 +388,68 @@ class GetAttendanceOfRange(generics.GenericAPIView):
             lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, teacher=teacher,
                                           div=div, subject=subject)
 
-        if lecs:
-            student_list = Student.objects.filter(div=div)
-            student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
+        # if lecs:
+        #     student_list = Student.objects.filter(div=div)
+        #     student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
 
-            attendance_list = []
+        #     attendance_list = []
 
-            for student in student_list:
-                relevant_student_lectures = student_lectures.filter(student=student)
+        #     for student in student_list:
+        #         relevant_student_lectures = student_lectures.filter(student=student)
+        #         student_json = StudentSerializer(student).data
+        #         student_json["attendance_count"] = len(relevant_student_lectures)
+        #         student_json["attendance_percentage"] = len(relevant_student_lectures) * 100 / len(lecs)
+        #         attendance_list.append(student_json)
+
+        #     attendance_list.sort(key=lambda x: x["sapID"])
+
+        #     response_data = {
+        #         'attendance': attendance_list,
+        #     }
+
+        # else:
+        #     response_data = {
+        #         'attendance': [],
+        #     }
+
+        # return JsonResponse(response_data, status=status.HTTP_200_OK)
+        attendance_list = {}
+
+        for lec in lecs:
+            lecDateTime = lec.getDateTimeString()
+            attendance_list[lecDateTime] = []
+            student_lecs = StudentLecture.objects.filter(lecture=lec)
+            present_students = [sl.student for sl in student_lecs]
+
+            student_divs = StudentDivision.objects.filter(division=div)
+            div_students = [sd.student for sd in student_divs]
+
+            absent_students = list(set(div_students) - set(present_students))
+
+            for student in present_students:
                 student_json = StudentSerializer(student).data
-                student_json["attendance_count"] = len(relevant_student_lectures)
-                student_json["attendance_percentage"] = len(relevant_student_lectures) * 100 / len(lecs)
-                attendance_list.append(student_json)
+                student_json["attendance"] = 1
+                attendance_list[lecDateTime].append(student_json)
 
-            attendance_list.sort(key=lambda x: x["sapID"])
+            for student in absent_students:
+                student_json = StudentSerializer(student).data
+                student_json["attendance"] = 0
+                attendance_list[lecDateTime].append(student_json)
 
-            response_data = {
-                'attendance': attendance_list,
-            }
+            attendance_list[lecDateTime].sort(key=lambda x: x["sapID"])
 
-        else:
-            response_data = {
-                'attendance': [],
-            }
+        final_attendance_list = []
+
+        for lecDateTime in attendance_list:
+            attendance_object = {}
+            attendance_object['date'] = lecDateTime.split(':')[0].strip()
+            attendance_object['time'] = lecDateTime.split(':')[1].strip()
+            attendance_object['attendance_list'] = attendance_list[lecDateTime]
+            final_attendance_list.append(attendance_object)
+
+        response_data = {
+            'attendance': final_attendance_list,
+        }
 
         return JsonResponse(response_data, status=status.HTTP_200_OK)
 
