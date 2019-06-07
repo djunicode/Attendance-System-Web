@@ -442,8 +442,7 @@ class GetAttendanceOfRange(generics.GenericAPIView):
 
         for lecDateTime in attendance_list:
             attendance_object = {}
-            attendance_object['date'] = lecDateTime.split(':')[0].strip()
-            attendance_object['time'] = lecDateTime.split(':')[1].strip()
+            attendance_object['time'] = lecDateTime
             attendance_object['attendance_list'] = attendance_list[lecDateTime]
             final_attendance_list.append(attendance_object)
 
