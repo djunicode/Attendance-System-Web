@@ -91,6 +91,9 @@ class Lecture(models.Model):
     def getTimeString(self):
         return self.startTime.strftime("%H:%M %p") + " - " + self.endTime.strftime("%H:%M %p")
 
+    def getDateTimeString(self):
+        return self.date.strftime("%d-%m-%Y") + " : " + self.getTimeString()
+
 
 class Student(models.Model):
     user = models.OneToOneField(AppUser, on_delete=models.CASCADE, primary_key=True)
