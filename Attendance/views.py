@@ -362,7 +362,7 @@ class GetAttendanceOfRange(generics.GenericAPIView):
 
         if date_from.month < 6 and date_to.month < 6:
             semester = year * 2
-        elif date_from.month > 6 and date_to.month > 6:
+        elif date_from.month >= 6 and date_to.month >= 6:
             semester = year * 2 - 1
         else:
             response_data = {'error_message': "Dates are not from the same semester."}
