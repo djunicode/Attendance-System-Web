@@ -739,7 +739,7 @@ class GetStudentListOfLecture(generics.GenericAPIView):
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        students = Student.objects.get(div=div)
+        students = Student.objects.filter(div=div)
         students_json = StudentSerializer(students, many=True).data
 
         return JsonResponse({
