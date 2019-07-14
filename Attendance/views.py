@@ -11,7 +11,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
 
 from rest_framework import generics, status
-from .models import Teacher, Student, Lecture, Div, Subject, SubjectTeacher, AppUser, StudentLecture, StudentDivision
+from .models import Teacher, Student, Lecture, Div, Subject, TimeTableLecture
+from .models import SubjectTeacher, AppUser, StudentLecture, StudentDivision
 from .serializers import TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer
 from rest_framework.authentication import TokenAuthentication
 import datetime
@@ -667,3 +668,82 @@ class DownloadCsv(generics.GenericAPIView):
             csvwriter.writerow(var.values())
 
         return response
+
+# Android EndPoint Views
+
+
+class GetLectureListOfTheDay(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        try:
+            date = kwargs['date']
+            d, m, y = date.split('-')
+            date = datetime.datetime(int(y), int(m), int(d)).date()
+        except Exception:
+            response_data = {'error_message': "Date sent is incorrectly formatted. Excepted dd-mm-yy format."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            teacher = Teacher.objects.get(user=request.user)
+        except Exception:
+            response_data = {'error_message': "Logged in user is not a teacher."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        ttlectures = TimeTableLecture.objects.filter(teacher=teacher, day_of_the_week=date.weekday())
+
+        lectures = []
+
+        for ttlecture in ttlectures:
+            lecture = Lecture(
+                roomNumber=ttlecture.roomNumber,
+                startTime=ttlecture.startTime,
+                endTime=ttlecture.endTime,
+                date=date,
+                teacher=ttlecture.teacher,
+                div=ttlecture.div,
+                subject=ttlecture.div
+            )
+            lectures.append(lecture)
+
+        lectures = LectureSerializer(lectures, many=True).data
+
+        return JsonResponse({
+            'date': date,
+            'lectures': lectures
+        }, status=status.HTTP_200_OK)
+
+
+class GetStudentListOfLecture(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        subject_name = kwargs['subject']
+        div = kwargs['div']
+
+        yearname, division = div.split("_")
+        year = Div.yearnameToYear(yearname)
+        if datetime.date.today().month < 6:
+            semester = year * 2
+        else:
+            semester = year * 2 - 1
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            div = Div.objects.get(division=division, year=year, semester=semester)
+
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Div.DoesNotExist:
+            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        students = Student.objects.get(div=div)
+        students_json = StudentSerializer(students, many=True).data
+
+        return JsonResponse({
+            'subject': subject,
+            'div': div,
+            'students': students_json
+        }, status=status.HTTP_200_OK)

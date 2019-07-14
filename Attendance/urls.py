@@ -35,4 +35,7 @@ urlpatterns = [
     path('edit-attendance-of-day/<str:subject>/<str:div>/<str:date>',
          views.EditAttendanceOfDay.as_view(), name='edit-attendance'),
     path('get_csv/<str:subject>/<str:div>/<str:date_from>/<str:date_to>', views.DownloadCsv.as_view(), name='get-csv'),
+
+    path('get-lectures-of-the-day/<str:date>', views.GetLectureListOfTheDay.as_view(), name='get-lectures'),
+    path('get-student-list/<str:subject>/<str:div>', views.GetStudentListOfLecture.as_view(), name='get-students-list')
 ]

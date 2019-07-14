@@ -95,6 +95,25 @@ class Lecture(models.Model):
         return self.date.strftime("%d-%m-%Y") + " : " + self.getTimeString()
 
 
+class TimeTableLecture(models.Model):
+    roomNumber = models.CharField(max_length=10, blank=True)
+    startTime = models.TimeField(auto_now=False, auto_now_add=False)
+    endTime = models.TimeField(auto_now=False, auto_now_add=False)
+    day_of_the_week = models.IntegerField()
+    teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)
+    div = models.ForeignKey(Div, on_delete=models.PROTECT)
+    subject = models.ForeignKey(Subject, on_delete=models.PROTECT)
+
+    def __str__(self):
+        return str(self.div) + " " + self.getTimeString()
+
+    def getTimeString(self):
+        return self.startTime.strftime("%H:%M %p") + " - " + self.endTime.strftime("%H:%M %p")
+
+    def getDateTimeString(self):
+        return self.date.strftime("%d-%m-%Y") + " : " + self.getTimeString()
+
+
 class Student(models.Model):
     user = models.OneToOneField(AppUser, on_delete=models.CASCADE, primary_key=True)
     sapID = models.BigIntegerField(unique=True)
