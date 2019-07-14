@@ -743,7 +743,7 @@ class GetStudentListOfLecture(generics.GenericAPIView):
         students_json = StudentSerializer(students, many=True).data
 
         return JsonResponse({
-            'subject': subject,
-            'div': div,
+            'subject': SubjectSerializer(subject).data,
+            'div': DivSerializer(div).data,
             'students': students_json
         }, status=status.HTTP_200_OK)
