@@ -1,4 +1,4 @@
-from .models import (Student, AppUser, Teacher, Lecture, Div, Subject,
+from .models import (Student, AppUser, Teacher, Lecture, Div, Subject, TimeTableLecture,
                      StudentLecture, SubjectTeacher, DivisionSubject, StudentDivision, DivisionTeacher)
 import random
 from datetime import datetime, timedelta
@@ -84,6 +84,17 @@ def fillLecture(count=50):
                 lecture.subject = random.choice(list(Subject.objects.all()))
                 lecture.teacher = random.choice(list(Teacher.objects.all()))
                 lecture.save()
+
+                ttlec = TimeTableLecture()
+                ttlec.roomNumber = lecture.roomNumber
+                ttlec.day_of_the_week = lecture.date.weekday()
+                ttlec.startTime = lecture.startTime
+                ttlec.endTime = lecture.endTime
+                ttlec.div = lecture.div
+                ttlec.subject = lecture.subject
+                ttlec.teacher = lecture.teacher
+                ttlec.save()
+
                 SubjectTeacher.objects.get_or_create(subject=lecture.subject, teacher=lecture.teacher, div=lecture.div)
                 DivisionTeacher.objects.get_or_create(division=lecture.div, teacher=lecture.teacher)
                 DivisionSubject.objects.get_or_create(division=lecture.div, subject=lecture.subject)
