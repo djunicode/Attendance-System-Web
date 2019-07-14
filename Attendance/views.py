@@ -702,7 +702,7 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                 date=date,
                 teacher=ttlecture.teacher,
                 div=ttlecture.div,
-                subject=ttlecture.div
+                subject=ttlecture.subject
             )
             lectures.append(lecture)
 
