@@ -20,6 +20,8 @@ class StudentSerializer(serializers.ModelSerializer):
 
 
 class DivSerializer(serializers.ModelSerializer):
+    classteacher = serializers.StringRelatedField()
+
     class Meta:
         model = Div
         fields = ('division', 'classteacher', 'semester', 'calendar_year')
