@@ -3,7 +3,7 @@ from .models import Teacher, Student, Lecture, Div, Subject, TimeTableLecture
 
 
 class TeacherSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source='getfullname')
+    name = serializers.CharField(source='__str__')
 
     class Meta:
 
@@ -12,7 +12,7 @@ class TeacherSerializer(serializers.ModelSerializer):
 
 
 class StudentSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source='getfullname')
+    name = serializers.CharField(source='__str__')
 
     class Meta:
         model = Student
