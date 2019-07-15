@@ -1,7 +1,7 @@
 from .models import (Student, AppUser, Teacher, Lecture, Div, Subject, TimeTableLecture,
                      StudentLecture, SubjectTeacher, DivisionSubject, StudentDivision, DivisionTeacher)
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import math
 from faker import Faker
 
@@ -61,12 +61,13 @@ def fillDiv():
             teachers.remove(teacher2)
         else:
             teacher2 = None
-        Div.objects.create(semester=sem, year=math.ceil(sem / 2), division='A', classteacher=teacher1)
-        Div.objects.create(semester=sem, year=math.ceil(sem / 2), division='B', classteacher=teacher2)
+        current_year = date.today().year
+        Div.objects.create(semester=sem, division='A', classteacher=teacher1, calendar_year=current_year)
+        Div.objects.create(semester=sem, division='B', classteacher=teacher2, calendar_year=current_year)
         for b in range(1, 5):
-            Div.objects.create(semester=sem, year=math.ceil(sem / 2), division='A' + str(b),
+            Div.objects.create(semester=sem, division='A' + str(b), calendar_year=current_year,
                                classteacher=teacher1)
-            Div.objects.create(semester=sem, year=math.ceil(sem / 2), division='B' + str(b),
+            Div.objects.create(semester=sem, division='B' + str(b), calendar_year=current_year,
                                classteacher=teacher2)
 
 

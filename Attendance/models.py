@@ -36,7 +36,7 @@ class Teacher(models.Model):
 
 class Div(models.Model):
     semester = models.PositiveSmallIntegerField()
-    year = models.PositiveSmallIntegerField()
+    calendar_year = models.PositiveIntegerField()
     division = models.CharField(max_length=10)
     subject = models.ManyToManyField(Subject, related_name='division', through="DivisionSubject")
     classteacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)

@@ -41,7 +41,7 @@ class DivSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Div
-        fields = ('division', 'classteacher', 'semester')
+        fields = ('division', 'classteacher', 'semester', 'calendar_year')
 
 
 class SubjectSerializer(serializers.ModelSerializer):

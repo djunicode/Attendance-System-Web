@@ -144,7 +144,7 @@ class TeachersSubjectDataView(generics.GenericAPIView):
             response_data = {'error_message': "Invalid TeacherId" + str(e)}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        divisions = Div.objects.filter(classteacher=teacher)
+        divisions = Div.objects.filter(classteacher=teacher, calendar_year=datetime.date.today().year)
         class_subjects = []
         for div in divisions:
             class_subjects_ordereddict = Subject.objects.filter(division=div).distinct()
@@ -316,7 +316,7 @@ class GetAttendanceOfDay(generics.GenericAPIView):
             semester = year * 2 - 1
         try:
             subject = Subject.objects.get(name=subject_name)
-            div = Div.objects.get(division=division, year=year, semester=semester)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -408,7 +408,7 @@ class GetAttendanceOfRange(generics.GenericAPIView):
 
         try:
             subject = Subject.objects.get(name=subject_name)
-            div = Div.objects.get(division=division, year=year, semester=semester)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -589,7 +589,7 @@ class EditAttendanceOfDay(generics.GenericAPIView):
             semester = year * 2 - 1
         try:
             subject = Subject.objects.get(name=subject_name)
-            div = Div.objects.get(division=division, year=year, semester=semester)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -662,7 +662,7 @@ class DownloadCsv(generics.GenericAPIView):
 
         try:
             subject = Subject.objects.get(name=subject_name)
-            div = Div.objects.get(division=division, year=year, semester=semester)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -766,7 +766,7 @@ class GetStudentListOfLecture(generics.GenericAPIView):
             semester = year * 2 - 1
         try:
             subject = Subject.objects.get(name=subject_name)
-            div = Div.objects.get(division=division, year=year, semester=semester)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
