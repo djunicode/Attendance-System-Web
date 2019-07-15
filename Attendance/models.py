@@ -56,9 +56,9 @@ class Div(models.Model):
         return yearname + "_" + self.division
 
     def get_class_type(self):
-        if len(self.division) is 1:
+        if len(self.division) == 1:
             return "Class"
-        elif len(self.division) is 2:
+        elif len(self.division) == 2:
             return "Practical"
         else:
             return "Elective"

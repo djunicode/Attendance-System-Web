@@ -13,7 +13,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework import generics, status
 from .models import Teacher, Student, Lecture, Div, Subject, TimeTableLecture
 from .models import SubjectTeacher, AppUser, StudentLecture, StudentDivision
-from .serializers import TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer
+from .serializers import (TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer,
+                          TimeTableLectureSerializer)
 from rest_framework.authentication import TokenAuthentication
 import datetime
 import time
@@ -254,6 +255,42 @@ class SignUpTeacherView(generics.GenericAPIView):
             return JsonResponse(response_data, status=status.HTTP_200_OK)
         except Exception as e:
             response_data = {'error_message': "Cannot sign you up due to " + str(e)}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GenericLoginView(generics.GenericAPIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+
+        try:
+            form_data = json.loads(request.body.decode())
+            user_id = form_data['id']
+            password = form_data['password']
+        except Exception:
+            user_id = request.POST.get('id')
+            password = request.POST.get('password')
+
+        user = authenticate(username=user_id, password=password)
+
+        if user is not None:
+            token, _ = Token.objects.get_or_create(user=user)
+            login(request, user)
+
+            response_data = {
+                'isStudent': user.is_student,
+                'isTeacher': user.is_teacher,
+                'token': token.key,
+            }
+
+            if user.is_student:
+                response_data['user'] = StudentSerializer(Student.objects.get(user=user)).data
+            else:
+                response_data['user'] = TeacherSerializer(Teacher.objects.get(user=user)).data
+
+            return JsonResponse(response_data, status=status.HTTP_200_OK)
+        else:
+            response_data = {'error_message': "Cannot log you in"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -741,6 +778,9 @@ class GetStudentListOfLecture(generics.GenericAPIView):
 
         students = Student.objects.filter(div=div)
         students_json = StudentSerializer(students, many=True).data
+
+        for student in students_json:
+            student['Attendance'] = 0
 
         return JsonResponse({
             'subject': SubjectSerializer(subject).data,
