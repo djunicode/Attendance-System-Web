@@ -20,7 +20,6 @@ class StudentSerializer(serializers.ModelSerializer):
 
 
 class DivSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Div
         fields = ('division', 'classteacher', 'semester', 'calendar_year')
@@ -34,8 +33,9 @@ class SubjectSerializer(serializers.ModelSerializer):
 
 class LectureSerializer(serializers.ModelSerializer):
     timing = serializers.CharField(source='getTimeString')
-    div = DivSerializer()
-    subject = SubjectSerializer()
+    div = serializers.StringRelatedField()
+    teacher = serializers.StringRelatedField()
+    subject = serializers.SlugRelatedField(slug_field='name', read_only=True)
 
     class Meta:
         model = Lecture
@@ -44,8 +44,9 @@ class LectureSerializer(serializers.ModelSerializer):
 
 class TimeTableLectureSerializer(serializers.ModelSerializer):
     timing = serializers.CharField(source="getTimeString")
-    div = DivSerializer()
-    subject = SubjectSerializer()
+    div = serializers.StringRelatedField()
+    teacher = serializers.StringRelatedField()
+    subject = serializers.SlugRelatedField(slug_field='name', read_only=True)
 
     class Meta:
         model = TimeTableLecture
