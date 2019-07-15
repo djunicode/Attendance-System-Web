@@ -765,7 +765,7 @@ class GetStudentListOfLecture(generics.GenericAPIView):
         else:
             semester = year * 2 - 1
         try:
-            subject = Subject.objects.get(name=subject_name)
+            # subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
 
         except Subject.DoesNotExist:
