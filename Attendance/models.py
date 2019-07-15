@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib import auth
 from django.contrib.auth.models import AbstractUser
 import time
+import datetime
 
 
 class AppUser(AbstractUser):
@@ -36,7 +37,7 @@ class Teacher(models.Model):
 
 class Div(models.Model):
     semester = models.PositiveSmallIntegerField()
-    calendar_year = models.PositiveIntegerField()
+    calendar_year = models.PositiveIntegerField(default=datetime.date.today().year)
     division = models.CharField(max_length=10)
     subject = models.ManyToManyField(Subject, related_name='division', through="DivisionSubject")
     classteacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)
