@@ -20,19 +20,21 @@ class StudentSerializer(serializers.ModelSerializer):
 
 
 class LectureSerializer(serializers.ModelSerializer):
-    timing = serializers.CharField(source="__str__")
+    timing = serializers.CharField(source='getTimeString')
+    div = serializers.StringRelatedField()
 
     class Meta:
         model = Lecture
-        fields = ('roomNumber', 'timing', 'date', 'subject', 'teacher')
+        fields = ('roomNumber', 'timing', 'date', 'subject', 'teacher', 'div')
 
 
 class TimeTableLectureSerializer(serializers.ModelSerializer):
-    timing = serializers.CharField(source="__str__")
+    timing = serializers.CharField(source="getTimeString")
+    div = serializers.StringRelatedField()
 
     class Meta:
         model = TimeTableLecture
-        fields = ('roomNumber', 'timing', 'day_of_the_week', 'subject', 'teacher')
+        fields = ('roomNumber', 'timing', 'day_of_the_week', 'subject', 'teacher', 'div')
 
 
 class DivSerializer(serializers.ModelSerializer):
