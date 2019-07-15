@@ -19,9 +19,16 @@ class StudentSerializer(serializers.ModelSerializer):
         fields = ('name', 'sapID')
 
 
+class DivSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Div
+        fields = ('division', 'classteacher', 'semester', 'calendar_year')
+
+
 class LectureSerializer(serializers.ModelSerializer):
     timing = serializers.CharField(source='getTimeString')
-    div = serializers.StringRelatedField()
+    div = DivSerializer()
 
     class Meta:
         model = Lecture
@@ -30,18 +37,11 @@ class LectureSerializer(serializers.ModelSerializer):
 
 class TimeTableLectureSerializer(serializers.ModelSerializer):
     timing = serializers.CharField(source="getTimeString")
-    div = serializers.StringRelatedField()
+    div = DivSerializer()
 
     class Meta:
         model = TimeTableLecture
         fields = ('roomNumber', 'timing', 'day_of_the_week', 'subject', 'teacher', 'div')
-
-
-class DivSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Div
-        fields = ('division', 'classteacher', 'semester', 'calendar_year')
 
 
 class SubjectSerializer(serializers.ModelSerializer):
