@@ -58,7 +58,7 @@ class Div(models.Model):
     def get_class_type(self):
         if len(self.division) == 1:
             return "Class"
-        elif len(self.division) == 2:
+        elif len(self.division) == 2 and self.division[1].isdigit():
             return "Practical"
         else:
             return "Elective"

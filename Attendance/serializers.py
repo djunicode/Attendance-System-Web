@@ -21,10 +21,11 @@ class StudentSerializer(serializers.ModelSerializer):
 
 class DivSerializer(serializers.ModelSerializer):
     classteacher = serializers.StringRelatedField()
+    class_type = serializers.CharField(source='get_class_type')
 
     class Meta:
         model = Div
-        fields = ('division', 'classteacher', 'semester', 'calendar_year')
+        fields = ('division', 'class_type', 'classteacher', 'semester', 'calendar_year')
 
 
 class SubjectSerializer(serializers.ModelSerializer):

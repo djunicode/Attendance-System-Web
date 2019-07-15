@@ -787,3 +787,37 @@ class GetStudentListOfLecture(generics.GenericAPIView):
             # 'div': DivSerializer(div).data,
             'students': students_json
         }, status=status.HTTP_200_OK)
+
+
+class GetStudentsAttendance(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        student = Student.objects.get(user=user)
+        student_divisions = StudentDivision.objects.filter(student=student)
+
+        attendance = {}
+        for sd in student_divisions:
+            division = sd.division
+            for subject in division.subject.all():
+                lectures = Lecture.objects.filter(div=division, subject=subject)
+                attendance[subject.name] = {
+                    'type': division.get_class_type(),
+                    'subject': subject.name,
+                    'total': 0,
+                    'attended': 0,
+                }
+                for lec in lectures:
+                    attendance[subject.name]['total'] += 1
+                    try:
+                        StudentLecture.objects.get(student=student, lecture=lec)
+                        attendance[subject.name]['attended'] += 1
+                    except StudentLecture.DoesNotExist:
+                        pass
+
+        attendance_list = []
+        for sub in attendance:
+            attendance_list.append(attendance[sub])
+
+        return JsonResponse({'attendance': attendance_list}, status=status.HTTP_200_OK)
