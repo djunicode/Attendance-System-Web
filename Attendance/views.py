@@ -862,7 +862,14 @@ class SaveAttendance(generics.GenericAPIView):
                 except StudentLecture.DoesNotExist:
                     pass
 
-        return JsonResponse(LectureSerializer(lecture).data, status=status.HTTP_200_OK)
+        return JsonResponse({
+            'subject':lecture.subject.name,
+            'div': str(lecture.div),
+            'room': lecture.roomNumber,
+            'startTime': lecture.startTime.strftime('%H:%M:%S'),
+            'endTime': lecture.endTime.strftime('%H:%M:%S'),
+            'date': lecture.date.strftime('%d-%m-%Y')
+        }, status=status.HTTP_200_OK)
 
 
 class GetStudentsAttendance(generics.GenericAPIView):
