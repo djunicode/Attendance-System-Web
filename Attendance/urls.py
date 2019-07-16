@@ -39,5 +39,6 @@ urlpatterns = [
 
     path('get-lectures-of-the-day/<str:date>', views.GetLectureListOfTheDay.as_view(), name='get-lectures'),
     path('get-student-list/<str:subject>/<str:div>', views.GetStudentListOfLecture.as_view(), name='get-students-list'),
+    path('save-attendance/', views.SaveAttendance.as_view(), name='save-attendance'),
     path('get-students-attendance/', views.GetStudentsAttendance.as_view(), name='get-students-attendance')
 ]
