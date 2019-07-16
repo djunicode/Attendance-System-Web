@@ -781,6 +781,7 @@ class GetStudentListOfLecture(generics.GenericAPIView):
 
         for student in students_json:
             student['Attendance'] = 0
+            student['sapID'] = str(student['sapID'])
 
         return JsonResponse({
             # 'subject': SubjectSerializer(subject).data,
@@ -852,7 +853,7 @@ class SaveAttendance(generics.GenericAPIView):
         )
 
         for student in students:
-            student_object = Student.objects.get(sapID=student['sapID'])
+            student_object = Student.objects.get(sapID=int(student['sapID']))
             if student['Attendance'] == 1:
                 StudentLecture.objects.get_or_create(student=student_object, lecture=lecture)
             else:
@@ -861,9 +862,7 @@ class SaveAttendance(generics.GenericAPIView):
                 except StudentLecture.DoesNotExist:
                     pass
 
-        return JsonResponse({
-            'lecture': LectureSerializer(lecture).data,
-        }, status=status.HTTP_200_OK)
+        return JsonResponse(LectureSerializer(lecture).data, status=status.HTTP_200_OK)
 
 
 class GetStudentsAttendance(generics.GenericAPIView):
