@@ -90,7 +90,7 @@ class Lecture(models.Model):
         return str(self.div) + " " + self.getTimeString()
 
     def getTimeString(self):
-        return self.startTime.strftime("%H:%M %p") + " - " + self.endTime.strftime("%H:%M %p")
+        return self.startTime.strftime("%H:%M:%S") + " - " + self.endTime.strftime("%H:%M:%S")
 
     def getDateTimeString(self):
         return self.date.strftime("%d-%m-%Y") + " : " + self.getTimeString()

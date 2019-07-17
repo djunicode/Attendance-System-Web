@@ -863,7 +863,7 @@ class SaveAttendance(generics.GenericAPIView):
                     pass
 
         return JsonResponse({
-            'subject':lecture.subject.name,
+            'subject': lecture.subject.name,
             'div': str(lecture.div),
             'room': lecture.roomNumber,
             'startTime': lecture.startTime.strftime('%H:%M:%S'),
