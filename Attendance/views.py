@@ -765,7 +765,7 @@ class GetStudentListOfLecture(generics.GenericAPIView):
         else:
             semester = year * 2 - 1
         try:
-            # subject = Subject.objects.get(name=subject_name)
+            subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
 
         except Subject.DoesNotExist:
@@ -779,9 +779,23 @@ class GetStudentListOfLecture(generics.GenericAPIView):
         students = Student.objects.filter(div=div)
         students_json = StudentSerializer(students, many=True).data
 
-        for student in students_json:
-            student['Attendance'] = 0
-            student['sapID'] = str(student['sapID'])
+        teacher = Teacher.objects.get(user=request.user)
+        try:
+            lecture = Lecture.objects.get(subject=subject, div=div, date=datetime.date.today(), teacher=teacher)
+
+            for student in students_json:
+                student_object = students.get(sapID=student['sapID'])
+                try:
+                    StudentLecture.objects.get(lecture=lecture, student=student_object)
+                    student['Attendance'] = 1
+                except StudentLecture.DoesNotExist:
+                    student['Attendance'] = 0
+                student['sapID'] = str(student['sapID'])
+
+        except Lecture.DoesNotExist:
+            for student in students_json:
+                student['Attendance'] = 0
+                student['sapID'] = str(student['sapID'])
 
         return JsonResponse({
             # 'subject': SubjectSerializer(subject).data,
