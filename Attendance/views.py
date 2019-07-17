@@ -757,6 +757,7 @@ class GetStudentListOfLecture(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         subject_name = kwargs['subject']
         div = kwargs['div']
+        startTime = kwargs['startTime']
 
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
@@ -767,6 +768,8 @@ class GetStudentListOfLecture(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+            h, m, s = startTime.split(':')
+            startTime = datetime.time(int(h), int(m), int(s))
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -776,12 +779,17 @@ class GetStudentListOfLecture(generics.GenericAPIView):
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
+        except Exception:
+            response_data = {'error_message': "Wrong Time format. Expecting hh:mm:ss"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
         students = Student.objects.filter(div=div)
         students_json = StudentSerializer(students, many=True).data
+        today = datetime.date.today()
 
         teacher = Teacher.objects.get(user=request.user)
         try:
-            lecture = Lecture.objects.get(subject=subject, div=div, date=datetime.date.today(), teacher=teacher)
+            lecture = Lecture.objects.get(subject=subject, div=div, date=today, teacher=teacher, startTime=startTime)
 
             for student in students_json:
                 student_object = students.get(sapID=student['sapID'])
@@ -792,7 +800,7 @@ class GetStudentListOfLecture(generics.GenericAPIView):
                     student['Attendance'] = 0
                 student['sapID'] = str(student['sapID'])
 
-        except Lecture.DoesNotExist:
+        except Exception:
             for student in students_json:
                 student['Attendance'] = 0
                 student['sapID'] = str(student['sapID'])
