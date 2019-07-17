@@ -757,6 +757,7 @@ class GetStudentListOfLecture(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         subject_name = kwargs['subject']
         div = kwargs['div']
+        lecture_date = kwargs['date']
         startTime = kwargs['startTime']
 
         yearname, division = div.split("_")
@@ -770,6 +771,8 @@ class GetStudentListOfLecture(generics.GenericAPIView):
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
+            d, m, y = lecture_date.split('-')
+            lec_date = datetime.datetime(int(y), int(m), int(d)).date()
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -780,16 +783,15 @@ class GetStudentListOfLecture(generics.GenericAPIView):
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception:
-            response_data = {'error_message': "Wrong Time format. Expecting hh:mm:ss"}
+            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         students = Student.objects.filter(div=div)
         students_json = StudentSerializer(students, many=True).data
-        today = datetime.date.today()
 
         teacher = Teacher.objects.get(user=request.user)
         try:
-            lecture = Lecture.objects.get(subject=subject, div=div, date=today, teacher=teacher, startTime=startTime)
+            lecture = Lecture.objects.get(subject=subject, div=div, date=lec_date, teacher=teacher, startTime=startTime)
 
             for student in students_json:
                 student_object = students.get(sapID=student['sapID'])
