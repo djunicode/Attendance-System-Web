@@ -764,7 +764,7 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                 )
 
                 lecture_json = LectureSerializer(lecture).data
-                lecture_json['dirty'] = 1
+                lecture_json['attendanceTaken'] = 1
 
             except Lecture.DoesNotExist:
                 lecture = Lecture(
@@ -778,7 +778,7 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                 )
 
                 lecture_json = LectureSerializer(lecture).data
-                lecture_json['dirty'] = 0
+                lecture_json['attendanceTaken'] = 0
 
             predicted_lectures.append(lecture_json)
 
