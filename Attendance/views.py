@@ -726,7 +726,11 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
             response_data = {'error_message': "Logged in user is not a teacher."}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        all_past_lectures = Lecture.objects.filter(teacher=teacher, date__week_day=date.weekday())
+        week_day = date.weekday()+2
+        if week_day == 8:
+            week_day = 1
+
+        all_past_lectures = Lecture.objects.filter(teacher=teacher, date__week_day=week_day)
 
         subjectdivs = []
 
