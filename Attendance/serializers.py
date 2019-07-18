@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Teacher, Student, Lecture, Div, Subject, TimeTableLecture
+from .models import Teacher, Student, Lecture, Div, Subject
 
 
 class TeacherSerializer(serializers.ModelSerializer):
@@ -43,14 +43,3 @@ class LectureSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lecture
         fields = ('roomNumber', 'timing', 'date', 'subject', 'teacher', 'div')
-
-
-class TimeTableLectureSerializer(serializers.ModelSerializer):
-    timing = serializers.CharField(source="getTimeString")
-    div = serializers.StringRelatedField()
-    teacher = serializers.StringRelatedField()
-    subject = serializers.SlugRelatedField(slug_field='name', read_only=True)
-
-    class Meta:
-        model = TimeTableLecture
-        fields = ('roomNumber', 'timing', 'day_of_the_week', 'subject', 'teacher', 'div')

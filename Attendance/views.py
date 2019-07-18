@@ -11,10 +11,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
 
 from rest_framework import generics, status
-from .models import Teacher, Student, Lecture, Div, Subject, TimeTableLecture
+from .models import Teacher, Student, Lecture, Div, Subject
 from .models import SubjectTeacher, AppUser, StudentLecture, StudentDivision
-from .serializers import (TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer,
-                          TimeTableLectureSerializer)
+from .serializers import (TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer)
 from rest_framework.authentication import TokenAuthentication
 import datetime
 import time
@@ -727,27 +726,65 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
             response_data = {'error_message': "Logged in user is not a teacher."}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        ttlectures = TimeTableLecture.objects.filter(teacher=teacher, day_of_the_week=date.weekday())
+        all_past_lectures = Lecture.objects.filter(teacher=teacher, date__week_day=date.weekday())
+
+        subjectdivs = []
 
         lectures = []
 
-        for ttlecture in ttlectures:
-            lecture = Lecture(
-                roomNumber=ttlecture.roomNumber,
-                startTime=ttlecture.startTime,
-                endTime=ttlecture.endTime,
-                date=date,
-                teacher=ttlecture.teacher,
-                div=ttlecture.div,
-                subject=ttlecture.subject
-            )
-            lectures.append(lecture)
+        predicted_lectures = []
 
-        lectures = LectureSerializer(lectures, many=True).data
+        for lec in all_past_lectures:
+            if (lec.subject, lec.div) not in subjectdivs:
+                subjectdivs.append((lec.subject, lec.div))
+
+        for subjectdiv in subjectdivs:
+            pastlecs = all_past_lectures.filter(subject=subjectdiv[0], div=subjectdiv[1])
+            max = None
+            counts = {}
+            for lec in pastlecs:
+                if lec.startTime in counts:
+                    counts[lec.startTime] += 1
+                else:
+                    counts[lec.startTime] = 1
+                if not max or counts[lec.startTime] > counts[max.startTime]:
+                    max = lec
+            lectures.append(max)
+
+        for ttlecture in lectures:
+            try:
+                lecture = Lecture.objects.get(
+                    roomNumber=ttlecture.roomNumber,
+                    startTime=ttlecture.startTime,
+                    endTime=ttlecture.endTime,
+                    date=date,
+                    teacher=ttlecture.teacher,
+                    div=ttlecture.div,
+                    subject=ttlecture.subject
+                )
+
+                lecture_json = LectureSerializer(lecture).data
+                lecture_json['dirty'] = 1
+
+            except Lecture.DoesNotExist:
+                lecture = Lecture(
+                    roomNumber=ttlecture.roomNumber,
+                    startTime=ttlecture.startTime,
+                    endTime=ttlecture.endTime,
+                    date=date,
+                    teacher=ttlecture.teacher,
+                    div=ttlecture.div,
+                    subject=ttlecture.subject
+                )
+
+                lecture_json = LectureSerializer(lecture).data
+                lecture_json['dirty'] = 0
+
+            predicted_lectures.append(lecture_json)
 
         return JsonResponse({
             'date': date,
-            'lectures': lectures
+            'lectures': predicted_lectures
         }, status=status.HTTP_200_OK)
 
 
