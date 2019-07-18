@@ -726,7 +726,7 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
             response_data = {'error_message': "Logged in user is not a teacher."}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        week_day = date.weekday()+2
+        week_day = date.weekday() + 2
         if week_day == 8:
             week_day = 1
 
@@ -969,3 +969,23 @@ class GetStudentsAttendance(generics.GenericAPIView):
             attendance_list.append(attendance[sub])
 
         return JsonResponse({'attendance': attendance_list}, status=status.HTTP_200_OK)
+
+
+class GetSubjectsAndDivisions(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        teacher = Teacher.objects.get(user=request.user)
+
+        subjectteachers = SubjectTeacher.objects.filter(teacher=teacher)
+
+        return_objects = []
+
+        for st in subjectteachers:
+            obj = {
+                'div': str(st.div),
+                'subject': st.subject.name
+            }
+            return_objects.append(obj)
+
+        return JsonResponse(return_objects, status=status.HTTP_200_OK, safe=False)

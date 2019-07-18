@@ -38,7 +38,10 @@ urlpatterns = [
     path('get_csv/<str:subject>/<str:div>/<str:date_from>/<str:date_to>', views.DownloadCsv.as_view(), name='get-csv'),
 
     path('get-lectures-of-the-day/<str:date>', views.GetLectureListOfTheDay.as_view(), name='get-lectures'),
-    path('get-student-list/<str:subject>/<str:div>/<str:date>/<str:startTime>', views.GetStudentListOfLecture.as_view(), name='get-students-list'),
+    path('get-student-list/<str:subject>/<str:div>/<str:date>/<str:startTime>', views.GetStudentListOfLecture.as_view(),
+         name='get-students-list'),
     path('save-attendance/', views.SaveAttendance.as_view(), name='save-attendance'),
-    path('get-students-attendance/', views.GetStudentsAttendance.as_view(), name='get-students-attendance')
+    path('get-students-attendance/', views.GetStudentsAttendance.as_view(), name='get-students-attendance'),
+    path('get-all-subjects-and-divisions/', views.GetSubjectsAndDivisions.as_view(),
+         name='get-all-subjects-and-divisions'),
 ]
