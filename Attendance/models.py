@@ -78,7 +78,7 @@ class Div(models.Model):
 
 
 class Lecture(models.Model):
-    roomNumber = models.CharField(max_length=10, blank=True)
+    roomNumber = models.CharField(max_length=32, blank=True)
     startTime = models.TimeField(auto_now=False, auto_now_add=False)
     endTime = models.TimeField(auto_now=False, auto_now_add=False)
     date = models.DateField(auto_now=False, auto_now_add=False)
