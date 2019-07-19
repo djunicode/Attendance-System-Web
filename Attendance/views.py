@@ -768,7 +768,10 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                 )
 
                 lecture_json = LectureSerializer(lecture).data
-                lecture_json['attendanceTaken'] = 1
+                if len(StudentLecture.objects.filter(lecture=lecture)) > 0:
+                    lecture_json['attendanceTaken'] = 1
+                else:
+                    lecture_json['attendanceTaken'] = 0
 
             except Lecture.DoesNotExist:
                 lecture = Lecture(
@@ -1009,7 +1012,7 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
             endTime = form_data['endTime']
             lecture_date = form_data['date']
         except KeyError:
-            response_data = {'error_message': "Expecting subject, div, room, startTime, endTime, date and students."}
+            response_data = {'error_message': "Expecting subject, div, room, startTime, endTime and date."}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
             subject_name = request.POST.get('subject')
