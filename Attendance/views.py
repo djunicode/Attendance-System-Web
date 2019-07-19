@@ -11,8 +11,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
 
 from rest_framework import generics, status
-from .models import Teacher, Student, Lecture, Div, Subject
-from .models import SubjectTeacher, AppUser, StudentLecture, StudentDivision
+from .models import Teacher, Student, Lecture, Div, Subject, AppUser
+from .models import SubjectTeacher, StudentLecture, StudentDivision, DivisionSubject
 from .serializers import (TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer)
 from rest_framework.authentication import TokenAuthentication
 import datetime
@@ -889,6 +889,7 @@ class SaveAttendance(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+            DivisionSubject.objects.get(division=div, subject=subject)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -901,6 +902,10 @@ class SaveAttendance(generics.GenericAPIView):
 
         except Div.DoesNotExist:
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except DivisionSubject.DoesNotExist:
+            response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception:
