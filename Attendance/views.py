@@ -1056,7 +1056,13 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
         students = Student.objects.filter(div=div)
         students_json = StudentSerializer(students, many=True).data
         try:
-            lecture = Lecture.objects.get(subject=subject, div=div, date=lecture_date, teacher=teacher, startTime=startTime)
+            lecture = Lecture.objects.get(
+                subject=subject,
+                div=div,
+                date=lecture_date,
+                teacher=teacher,
+                startTime=startTime
+            )
 
             for student in students_json:
                 student_object = students.get(sapID=student['sapID'])
