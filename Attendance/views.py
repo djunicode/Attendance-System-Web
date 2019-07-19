@@ -1048,7 +1048,7 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
 
         teacher = Teacher.objects.get(user=request.user)
 
-        lecture = Lecture.objects.get_or_create(
+        lecture, _ = Lecture.objects.get_or_create(
             roomNumber=roomNumber,
             startTime=startTime,
             endTime=endTime,
