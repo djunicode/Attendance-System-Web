@@ -1060,31 +1060,16 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
 
         students = Student.objects.filter(div=div)
         students_json = StudentSerializer(students, many=True).data
-        try:
-            lecture = Lecture.objects.get(
-                subject=subject,
-                div=div,
-                date=lecture_date,
-                teacher=teacher,
-                startTime=startTime
-            )
 
-            for student in students_json:
-                student_object = students.get(sapID=student['sapID'])
-                try:
-                    StudentLecture.objects.get(lecture=lecture, student=student_object)
-                    student['Attendance'] = 1
-                except StudentLecture.DoesNotExist:
-                    student['Attendance'] = 0
-                student['sapID'] = str(student['sapID'])
-
-        except Exception:
-            for student in students_json:
+        for student in students_json:
+            student_object = students.get(sapID=student['sapID'])
+            try:
+                StudentLecture.objects.get(lecture=lecture, student=student_object)
+                student['Attendance'] = 1
+            except StudentLecture.DoesNotExist:
                 student['Attendance'] = 0
-                student['sapID'] = str(student['sapID'])
+            student['sapID'] = str(student['sapID'])
 
         return JsonResponse({
-            # 'subject': SubjectSerializer(subject).data,
-            # 'div': DivSerializer(div).data,
             'students': students_json
         }, status=status.HTTP_200_OK)
