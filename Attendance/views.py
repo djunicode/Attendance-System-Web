@@ -1031,6 +1031,7 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+            DivisionSubject.objects.get(division=div, subject=subject)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -1043,6 +1044,10 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
 
         except Div.DoesNotExist:
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except DivisionSubject.DoesNotExist:
+            response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception:
