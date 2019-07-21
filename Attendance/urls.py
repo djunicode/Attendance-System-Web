@@ -11,16 +11,7 @@ urlpatterns = [
     path('signup/', views.signup, name='signup'),
     path('thanks/', views.ThanksPage.as_view(), name='thanks'),
 
-    path('teachers/', views.TeacherListView.as_view(), name='teacher-list'),
-    path('teachers/<int:pk>/', views.TeacherDetailView.as_view(), name='teacher-details'),
-    path('students/', views.StudentListView.as_view(), name='student-list'),
-    path('students/<int:pk>/', views.StudentDetailView.as_view(), name='student-details'),
-    path('subjects/', views.SubjectListView.as_view(), name='subject-list'),
-    path('subjects/<int:pk>/', views.SubjectDetailView.as_view(), name='subject-details'),
-    path('lectures/', views.LectureListView.as_view(), name='lecture-list'),
-    path('lectures/<int:pk>/', views.LectureDetailView.as_view(), name='lecture-details'),
-    path('divisions/', views.DivisionListView.as_view(), name='division-list'),
-    path('divisions/<int:pk>/', views.DivisionDetailView.as_view(), name='division-details'),
+    # Web URLs
 
     path('login-teacher/', views.LoginTeacherView.as_view(), name='login-teacher'),
     path('logout-teacher/', views.LogoutTeacherView.as_view(), name='logout-teacher'),
@@ -36,6 +27,8 @@ urlpatterns = [
     path('edit-attendance-of-day/<str:subject>/<str:div>/<str:date>',
          views.EditAttendanceOfDay.as_view(), name='edit-attendance'),
     path('get_csv/<str:subject>/<str:div>/<str:date_from>/<str:date_to>', views.DownloadCsv.as_view(), name='get-csv'),
+
+    # Android URLs
 
     path('get-lectures-of-the-day/<str:date>', views.GetLectureListOfTheDay.as_view(), name='get-lectures'),
     path('get-student-list/<str:subject>/<str:div>/<str:date>/<str:startTime>', views.GetStudentListOfLecture.as_view(),
