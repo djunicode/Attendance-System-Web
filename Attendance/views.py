@@ -675,8 +675,14 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
 
         predicted_lectures = []
 
+        if datetime.date.today().month < 6:
+            rem = 0
+        else:
+            rem = 1
+
         for lec in all_past_lectures:
-            if (lec.subject, lec.div) not in subjectdivs:
+            div_is_correct = (lec.div.semester % 2 == rem) and (lec.div.calendar_year == datetime.date.today().year)
+            if (lec.subject, lec.div) not in subjectdivs and div_is_correct:
                 subjectdivs.append((lec.subject, lec.div))
 
         for subjectdiv in subjectdivs:
@@ -724,6 +730,7 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                 lecture_json = LectureSerializer(lecture).data
                 lecture_json['attendanceTaken'] = 0
 
+            # lecture_json['type'] = lecture.div.get_class_type()
             predicted_lectures.append(lecture_json)
 
         return JsonResponse({
@@ -783,16 +790,12 @@ class GetStudentListOfLecture(generics.GenericAPIView):
                     student['Attendance'] = 0
                 student['sapID'] = str(student['sapID'])
 
-        except Exception:
+        except Lecture.DoesNotExist:
             for student in students_json:
                 student['Attendance'] = 0
                 student['sapID'] = str(student['sapID'])
 
-        return JsonResponse({
-            # 'subject': SubjectSerializer(subject).data,
-            # 'div': DivSerializer(div).data,
-            'students': students_json
-        }, status=status.HTTP_200_OK)
+        return JsonResponse({'students': students_json}, status=status.HTTP_200_OK)
 
 
 class SaveAttendance(generics.GenericAPIView):
@@ -862,8 +865,10 @@ class SaveAttendance(generics.GenericAPIView):
             subject=subject
         )
 
+        student_objects = Student.objects.filter(sapID__in=[int(student['sapID']) for student in students])
+
         for student in students:
-            student_object = Student.objects.get(sapID=int(student['sapID']))
+            student_object = student_objects.get(sapID=int(student['sapID']))
             if student['Attendance'] == 1:
                 StudentLecture.objects.get_or_create(student=student_object, lecture=lecture)
             else:
@@ -885,29 +890,52 @@ class SaveAttendance(generics.GenericAPIView):
 class GetStudentsAttendance(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
 
+    def multiple_lectures(self, lecture):
+
+        if lecture.div.get_class_type() == 'Practical':
+            return 1
+
+        start = datetime.datetime.combine(lecture.date, lecture.startTime)
+        end = datetime.datetime.combine(lecture.date, lecture.endTime)
+        difference = end - start
+        td = difference.total_seconds() / 60
+        if td > 90 and td <= 150:
+            return 2
+        elif td>150 and td < 210:
+            return 3
+        return 1
+
     def get(self, request, *args, **kwargs):
         user = request.user
         student = Student.objects.get(user=user)
-        student_divisions = StudentDivision.objects.filter(student=student)
+        divisions = Div.objects.filter(calendar_year=datetime.date.today().year, student=student)
 
         attendance = {}
-        for sd in student_divisions:
-            division = sd.division
-            for subject in division.subject.all():
-                lectures = Lecture.objects.filter(div=division, subject=subject)
-                attendance[subject.name] = {
-                    'type': division.get_class_type(),
-                    'subject': subject.name,
-                    'total': 0,
-                    'attended': 0,
-                }
-                for lec in lectures:
-                    attendance[subject.name]['total'] += 1
-                    try:
-                        StudentLecture.objects.get(student=student, lecture=lec)
-                        attendance[subject.name]['attended'] += 1
-                    except StudentLecture.DoesNotExist:
-                        pass
+
+        if datetime.date.today().month < 6:
+            rem = 0
+        else:
+            rem = 1
+
+        for division in divisions:
+            if division.semester % 2 == rem:
+                for subject in division.subject.all():
+                    lectures = Lecture.objects.filter(div=division, subject=subject)
+                    type = division.get_class_type()
+                    attendance[subject.name + type] = {
+                        'type': type,
+                        'subject': subject.name,
+                        'total': 0,
+                        'attended': 0,
+                    }
+                    for lec in lectures:
+                        count = self.multiple_lectures(lec)
+                        attendance[subject.name + type]['total'] += count
+                        try:
+                            StudentLecture.objects.get(student=student, lecture=lec)
+                            attendance[subject.name + type]['attended'] += count
+                        except StudentLecture.DoesNotExist:
+                            pass
 
         attendance_list = []
         for sub in attendance:
@@ -944,6 +972,8 @@ class GetStudentAttendanceHistory(generics.GenericAPIView):
                 lectures.extend(list(Lecture.objects.filter(div=division, subject=subject)))
 
         lecs_json = []
+        lectures = sorted(lectures, key=lambda lec: lec.date, reverse=True)
+
         for lec in lectures:
             if StudentLecture.objects.filter(lecture=lec, student=student).exists():
                 present = 1

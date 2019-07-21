@@ -128,6 +128,12 @@ def fillAll():
     weighted_random = [True] * 9 + [False] * 1
 
     for div in divisions:
+        subjects = Subject.objects.filter(semester=div.semester)
+        for subject in subjects:
+            DivisionSubject.objects.create(
+                subject=subject,
+                division=div
+            )
         studentdiv = StudentDivision.objects.filter(division=div)
         lectures = Lecture.objects.filter(div=div)
         for sd in studentdiv:
