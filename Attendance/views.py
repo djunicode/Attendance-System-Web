@@ -730,7 +730,7 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                 lecture_json = LectureSerializer(lecture).data
                 lecture_json['attendanceTaken'] = 0
 
-            # lecture_json['type'] = lecture.div.get_class_type()
+            lecture_json['type'] = lecture.div.get_class_type()
             predicted_lectures.append(lecture_json)
 
         return JsonResponse({
