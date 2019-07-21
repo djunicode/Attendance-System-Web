@@ -1103,8 +1103,12 @@ class DeleteLecture(generics.GenericAPIView):
             roomNumber = form_data['room']
             startTime = form_data['startTime']
             endTime = form_data['endTime']
+            if 'date' in form_data:
+                lecture_date = form_data['date']
+            else:
+                lecture_date = datetime.date.today()
         except KeyError:
-            response_data = {'error_message': "Expecting subject, div, room, startTime and endTime."}
+            response_data = {'error_message': "Expecting subject, div, room, startTime and endTime. Date optional."}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
             subject_name = request.POST.get('subject')
@@ -1112,6 +1116,7 @@ class DeleteLecture(generics.GenericAPIView):
             roomNumber = request.POST.get('room')
             startTime = request.POST.get('startTime')
             endTime = request.POST.get('endTime')
+            lecture_date = request.POST.get('number', datetime.date.today())
 
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
@@ -1127,6 +1132,9 @@ class DeleteLecture(generics.GenericAPIView):
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
             endTime = datetime.time(int(h), int(m), int(s))
+            if isinstance(lecture_date, str):
+                d, m, y = lecture_date.split('-')
+                lecture_date = datetime.datetime(int(y), int(m), int(d)).date()
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
@@ -1140,7 +1148,7 @@ class DeleteLecture(generics.GenericAPIView):
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception:
-            response_data = {'error_message': "Wrong Time format. Expecting hh:mm:ss"}
+            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         teacher = Teacher.objects.get(user=request.user)
@@ -1150,7 +1158,7 @@ class DeleteLecture(generics.GenericAPIView):
                 roomNumber=roomNumber,
                 startTime=startTime,
                 endTime=endTime,
-                date=datetime.date.today(),
+                date=lecture_date,
                 teacher=teacher,
                 div=div,
                 subject=subject
