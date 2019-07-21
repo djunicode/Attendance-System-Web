@@ -11,8 +11,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
 
 from rest_framework import generics, status
-from .models import Teacher, Student, Lecture, Div, Subject, SubjectTeacher, AppUser, StudentLecture, StudentDivision
-from .serializers import TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer
+from .models import Teacher, Student, Lecture, Div, Subject, AppUser
+from .models import SubjectTeacher, StudentLecture, StudentDivision, DivisionSubject
+from .serializers import (TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer)
 from rest_framework.authentication import TokenAuthentication
 import datetime
 import time
@@ -62,70 +63,7 @@ def signup(request):
     return render(request, 'Attendance/signup.html', {'form': form})
 
 
-# REST FRAMEWORK RELATED API VIEWS
-
-
-class TeacherListView(generics.ListCreateAPIView):
-    queryset = Teacher.objects.all()
-    serializer_class = TeacherSerializer
-
-
-class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = TeacherSerializer
-
-    def get_queryset(self):
-        return Teacher.objects.all().filter(username=self.request.user)
-
-
-class StudentListView(generics.ListCreateAPIView):
-    queryset = Student.objects.all()
-    serializer_class = StudentSerializer
-
-
-class StudentDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = StudentSerializer
-
-    def get_queryset(self):
-        return Student.objects.all().filter(username=self.request.user)
-
-
-class LectureListView(generics.ListCreateAPIView):
-    queryset = Lecture.objects.all()
-    serializer_class = LectureSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-
-class LectureDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = LectureSerializer
-
-    def get_queryset(self):
-        return Lecture.objects.all().filter(user=self.request.user)
-
-
-class SubjectListView(generics.ListCreateAPIView):
-    queryset = Subject.objects.all()
-    serializer_class = SubjectSerializer
-
-
-class SubjectDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = SubjectSerializer
-
-    def get_queryset(self):
-        return Subject.objects.all().filter(user=self.request.user)
-
-
-class DivisionListView(generics.ListCreateAPIView):
-    queryset = Div.objects.all()
-    serializer_class = DivSerializer
-
-
-class DivisionDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = DivSerializer
-
-    def get_queryset(self):
-        return Div.objects.all().filter(user=self.request.user)
+# WEB EndPoint Views
 
 
 class TeachersSubjectDataView(generics.GenericAPIView):
@@ -142,7 +80,7 @@ class TeachersSubjectDataView(generics.GenericAPIView):
             response_data = {'error_message': "Invalid TeacherId" + str(e)}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        divisions = Div.objects.filter(classteacher=teacher)
+        divisions = Div.objects.filter(classteacher=teacher, calendar_year=datetime.date.today().year)
         class_subjects = []
         for div in divisions:
             class_subjects_ordereddict = Subject.objects.filter(division=div).distinct()
@@ -256,6 +194,42 @@ class SignUpTeacherView(generics.GenericAPIView):
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
 
+class GenericLoginView(generics.GenericAPIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+
+        try:
+            form_data = json.loads(request.body.decode())
+            user_id = form_data['id']
+            password = form_data['password']
+        except Exception:
+            user_id = request.POST.get('id')
+            password = request.POST.get('password')
+
+        user = authenticate(username=user_id, password=password)
+
+        if user is not None:
+            token, _ = Token.objects.get_or_create(user=user)
+            login(request, user)
+
+            response_data = {
+                'isStudent': user.is_student,
+                'isTeacher': user.is_teacher,
+                'token': token.key,
+            }
+
+            if user.is_student:
+                response_data['user'] = StudentSerializer(Student.objects.get(user=user)).data
+            else:
+                response_data['user'] = TeacherSerializer(Teacher.objects.get(user=user)).data
+
+            return JsonResponse(response_data, status=status.HTTP_200_OK)
+        else:
+            response_data = {'error_message': "Cannot log you in"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+
 class GetAttendanceOfDay(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
 
@@ -278,7 +252,7 @@ class GetAttendanceOfDay(generics.GenericAPIView):
             semester = year * 2 - 1
         try:
             subject = Subject.objects.get(name=subject_name)
-            div = Div.objects.get(division=division, year=year, semester=semester)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -370,7 +344,7 @@ class GetAttendanceOfRange(generics.GenericAPIView):
 
         try:
             subject = Subject.objects.get(name=subject_name)
-            div = Div.objects.get(division=division, year=year, semester=semester)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -551,7 +525,7 @@ class EditAttendanceOfDay(generics.GenericAPIView):
             semester = year * 2 - 1
         try:
             subject = Subject.objects.get(name=subject_name)
-            div = Div.objects.get(division=division, year=year, semester=semester)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -624,7 +598,7 @@ class DownloadCsv(generics.GenericAPIView):
 
         try:
             subject = Subject.objects.get(name=subject_name)
-            div = Div.objects.get(division=division, year=year, semester=semester)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -667,3 +641,532 @@ class DownloadCsv(generics.GenericAPIView):
             csvwriter.writerow(var.values())
 
         return response
+
+# Android EndPoint Views
+
+
+class GetLectureListOfTheDay(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        try:
+            date = kwargs['date']
+            d, m, y = date.split('-')
+            date = datetime.datetime(int(y), int(m), int(d)).date()
+        except Exception:
+            response_data = {'error_message': "Date sent is incorrectly formatted. Excepted dd-mm-yy format."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            teacher = Teacher.objects.get(user=request.user)
+        except Exception:
+            response_data = {'error_message': "Logged in user is not a teacher."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        week_day = date.weekday() + 2
+        if week_day == 8:
+            week_day = 1
+
+        all_past_lectures = Lecture.objects.filter(teacher=teacher, date__week_day=week_day)
+
+        subjectdivs = []
+
+        lectures = []
+
+        predicted_lectures = []
+
+        if datetime.date.today().month < 6:
+            rem = 0
+        else:
+            rem = 1
+
+        for lec in all_past_lectures:
+            div_is_correct = (lec.div.semester % 2 == rem) and (lec.div.calendar_year == datetime.date.today().year)
+            if (lec.subject, lec.div) not in subjectdivs and div_is_correct:
+                subjectdivs.append((lec.subject, lec.div))
+
+        for subjectdiv in subjectdivs:
+            pastlecs = all_past_lectures.filter(subject=subjectdiv[0], div=subjectdiv[1])
+            max = None
+            counts = {}
+            for lec in pastlecs:
+                if lec.startTime in counts:
+                    counts[lec.startTime] += 1
+                else:
+                    counts[lec.startTime] = 1
+                if not max or counts[lec.startTime] > counts[max.startTime]:
+                    max = lec
+            lectures.append(max)
+
+        for ttlecture in lectures:
+            try:
+                lecture = Lecture.objects.get(
+                    roomNumber=ttlecture.roomNumber,
+                    startTime=ttlecture.startTime,
+                    endTime=ttlecture.endTime,
+                    date=date,
+                    teacher=ttlecture.teacher,
+                    div=ttlecture.div,
+                    subject=ttlecture.subject
+                )
+
+                lecture_json = LectureSerializer(lecture).data
+                if len(StudentLecture.objects.filter(lecture=lecture)) > 0:
+                    lecture_json['attendanceTaken'] = 1
+                else:
+                    lecture_json['attendanceTaken'] = 0
+
+            except Lecture.DoesNotExist:
+                lecture = Lecture(
+                    roomNumber=ttlecture.roomNumber,
+                    startTime=ttlecture.startTime,
+                    endTime=ttlecture.endTime,
+                    date=date,
+                    teacher=ttlecture.teacher,
+                    div=ttlecture.div,
+                    subject=ttlecture.subject
+                )
+
+                lecture_json = LectureSerializer(lecture).data
+                lecture_json['attendanceTaken'] = 0
+
+            # lecture_json['type'] = lecture.div.get_class_type()
+            predicted_lectures.append(lecture_json)
+
+        return JsonResponse({
+            'date': date,
+            'lectures': predicted_lectures
+        }, status=status.HTTP_200_OK)
+
+
+class GetStudentListOfLecture(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        subject_name = kwargs['subject']
+        div = kwargs['div']
+        lecture_date = kwargs['date']
+        startTime = kwargs['startTime']
+
+        yearname, division = div.split("_")
+        year = Div.yearnameToYear(yearname)
+        if datetime.date.today().month < 6:
+            semester = year * 2
+        else:
+            semester = year * 2 - 1
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+            h, m, s = startTime.split(':')
+            startTime = datetime.time(int(h), int(m), int(s))
+            d, m, y = lecture_date.split('-')
+            lec_date = datetime.datetime(int(y), int(m), int(d)).date()
+
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Div.DoesNotExist:
+            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception:
+            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        students = Student.objects.filter(div=div)
+        students_json = StudentSerializer(students, many=True).data
+
+        teacher = Teacher.objects.get(user=request.user)
+        try:
+            lecture = Lecture.objects.get(subject=subject, div=div, date=lec_date, teacher=teacher, startTime=startTime)
+
+            for student in students_json:
+                student_object = students.get(sapID=student['sapID'])
+                try:
+                    StudentLecture.objects.get(lecture=lecture, student=student_object)
+                    student['Attendance'] = 1
+                except StudentLecture.DoesNotExist:
+                    student['Attendance'] = 0
+                student['sapID'] = str(student['sapID'])
+
+        except Lecture.DoesNotExist:
+            for student in students_json:
+                student['Attendance'] = 0
+                student['sapID'] = str(student['sapID'])
+
+        return JsonResponse({'students': students_json}, status=status.HTTP_200_OK)
+
+
+class SaveAttendance(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            form_data = json.loads(request.body.decode())
+            subject_name = form_data['subject']
+            div = form_data['div']
+            roomNumber = form_data['room']
+            startTime = form_data['startTime']
+            endTime = form_data['endTime']
+            lecture_date = form_data['date']
+            students = form_data['students']
+        except KeyError:
+            response_data = {'error_message': "Expecting subject, div, room, startTime, endTime, date and students."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            subject_name = request.POST.get('subject')
+            div = request.POST.get('div')
+            roomNumber = request.POST.get('room')
+            startTime = request.POST.get('startTime')
+            endTime = request.POST.get('endTime')
+            lecture_date = request.POST.get('date')
+            students = request.POST.get('students')
+
+        yearname, division = div.split("_")
+        year = Div.yearnameToYear(yearname)
+        if datetime.date.today().month < 6:
+            semester = year * 2
+        else:
+            semester = year * 2 - 1
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+            DivisionSubject.objects.get(division=div, subject=subject)
+            h, m, s = startTime.split(':')
+            startTime = datetime.time(int(h), int(m), int(s))
+            h, m, s = endTime.split(':')
+            endTime = datetime.time(int(h), int(m), int(s))
+            d, m, y = lecture_date.split('-')
+            lecture_date = datetime.datetime(int(y), int(m), int(d)).date()
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Div.DoesNotExist:
+            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except DivisionSubject.DoesNotExist:
+            response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception:
+            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        lecture, _ = Lecture.objects.get_or_create(
+            roomNumber=roomNumber,
+            startTime=startTime,
+            endTime=endTime,
+            date=lecture_date,
+            teacher=Teacher.objects.get(user=request.user),
+            div=div,
+            subject=subject
+        )
+
+        student_objects = Student.objects.filter(sapID__in=[int(student['sapID']) for student in students])
+
+        for student in students:
+            student_object = student_objects.get(sapID=int(student['sapID']))
+            if student['Attendance'] == 1:
+                StudentLecture.objects.get_or_create(student=student_object, lecture=lecture)
+            else:
+                try:
+                    StudentLecture.objects.get(student=student_object, lecture=lecture).delete()
+                except StudentLecture.DoesNotExist:
+                    pass
+
+        return JsonResponse({
+            'subject': lecture.subject.name,
+            'div': str(lecture.div),
+            'room': lecture.roomNumber,
+            'startTime': lecture.startTime.strftime('%H:%M:%S'),
+            'endTime': lecture.endTime.strftime('%H:%M:%S'),
+            'date': lecture.date.strftime('%d-%m-%Y')
+        }, status=status.HTTP_200_OK)
+
+
+class GetStudentsAttendance(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def multiple_lectures(self, lecture):
+
+        if lecture.div.get_class_type() == 'Practical':
+            return 1
+
+        start = datetime.datetime.combine(lecture.date, lecture.startTime)
+        end = datetime.datetime.combine(lecture.date, lecture.endTime)
+        difference = end - start
+        td = difference.total_seconds() / 60
+        if td > 90 and td <= 150:
+            return 2
+        elif td > 150 and td < 210:
+            return 3
+        return 1
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        student = Student.objects.get(user=user)
+        divisions = Div.objects.filter(calendar_year=datetime.date.today().year, student=student)
+
+        attendance = {}
+
+        if datetime.date.today().month < 6:
+            rem = 0
+        else:
+            rem = 1
+
+        for division in divisions:
+            if division.semester % 2 == rem:
+                for subject in division.subject.all():
+                    lectures = Lecture.objects.filter(div=division, subject=subject)
+                    type = division.get_class_type()
+                    attendance[subject.name + type] = {
+                        'type': type,
+                        'subject': subject.name,
+                        'total': 0,
+                        'attended': 0,
+                    }
+                    for lec in lectures:
+                        count = self.multiple_lectures(lec)
+                        attendance[subject.name + type]['total'] += count
+                        try:
+                            StudentLecture.objects.get(student=student, lecture=lec)
+                            attendance[subject.name + type]['attended'] += count
+                        except StudentLecture.DoesNotExist:
+                            pass
+
+        attendance_list = []
+        for sub in attendance:
+            attendance_list.append(attendance[sub])
+
+        return JsonResponse({'attendance': attendance_list}, status=status.HTTP_200_OK)
+
+
+class GetStudentAttendanceHistory(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        subject_name = kwargs['subject']
+        type = kwargs['type']
+
+        user = request.user
+        student = Student.objects.get(user=user)
+        divisions = Div.objects.filter(calendar_year=datetime.date.today().year, student=student)
+
+        try:
+            subject = Subject.objects.get(name=subject_name)
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        if type not in ['Class', 'Practical', 'Elective']:
+            response_data = {'error_message': "Type " + type + " does not match 'Class', 'Practical' or 'Elective'."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        lectures = []
+        for division in divisions:
+            div_has_subject = DivisionSubject.objects.filter(division=division, subject=subject).exists()
+            if division.get_class_type() == type and div_has_subject:
+                lectures.extend(list(Lecture.objects.filter(div=division, subject=subject)))
+
+        lecs_json = []
+        lectures = sorted(lectures, key=lambda lec: lec.date, reverse=True)
+
+        for lec in lectures:
+            if StudentLecture.objects.filter(lecture=lec, student=student).exists():
+                present = 1
+            else:
+                present = 0
+            lecs_json.append({
+                'date': lec.date.strftime("%d-%m-%Y"),
+                'time': lec.getTimeString(),
+                'present': present
+            })
+        return JsonResponse(lecs_json, status=status.HTTP_200_OK, safe=False)
+
+
+class GetSubjectsAndDivisions(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        teacher = Teacher.objects.get(user=request.user)
+
+        subjectteachers = SubjectTeacher.objects.filter(teacher=teacher)
+
+        return_objects = []
+
+        for st in subjectteachers:
+            if st.div.calendar_year == datetime.date.today().year:
+                obj = {
+                    'div': str(st.div),
+                    'subject': st.subject.name
+                }
+                return_objects.append(obj)
+
+        return JsonResponse(return_objects, status=status.HTTP_200_OK, safe=False)
+
+
+class SaveLectureAndGetStudentsList(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            form_data = json.loads(request.body.decode())
+            subject_name = form_data['subject']
+            div = form_data['div']
+            roomNumber = form_data['room']
+            startTime = form_data['startTime']
+            endTime = form_data['endTime']
+            lecture_date = form_data['date']
+        except KeyError:
+            response_data = {'error_message': "Expecting subject, div, room, startTime, endTime and date."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            subject_name = request.POST.get('subject')
+            div = request.POST.get('div')
+            roomNumber = request.POST.get('room')
+            startTime = request.POST.get('startTime')
+            endTime = request.POST.get('endTime')
+            lecture_date = request.POST.get('date')
+
+        yearname, division = div.split("_")
+        year = Div.yearnameToYear(yearname)
+        if datetime.date.today().month < 6:
+            semester = year * 2
+        else:
+            semester = year * 2 - 1
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+            DivisionSubject.objects.get(division=div, subject=subject)
+            h, m, s = startTime.split(':')
+            startTime = datetime.time(int(h), int(m), int(s))
+            h, m, s = endTime.split(':')
+            endTime = datetime.time(int(h), int(m), int(s))
+            d, m, y = lecture_date.split('-')
+            lecture_date = datetime.datetime(int(y), int(m), int(d)).date()
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Div.DoesNotExist:
+            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except DivisionSubject.DoesNotExist:
+            response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception:
+            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        teacher = Teacher.objects.get(user=request.user)
+
+        lecture, _ = Lecture.objects.get_or_create(
+            roomNumber=roomNumber,
+            startTime=startTime,
+            endTime=endTime,
+            date=lecture_date,
+            teacher=teacher,
+            div=div,
+            subject=subject
+        )
+
+        students = Student.objects.filter(div=div)
+        students_json = StudentSerializer(students, many=True).data
+
+        for student in students_json:
+            student_object = students.get(sapID=student['sapID'])
+            try:
+                StudentLecture.objects.get(lecture=lecture, student=student_object)
+                student['Attendance'] = 1
+            except StudentLecture.DoesNotExist:
+                student['Attendance'] = 0
+            student['sapID'] = str(student['sapID'])
+
+        return JsonResponse({
+            'students': students_json
+        }, status=status.HTTP_200_OK)
+
+
+class DeleteLecture(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            form_data = json.loads(request.body.decode())
+            subject_name = form_data['subject']
+            div = form_data['div']
+            roomNumber = form_data['room']
+            startTime = form_data['startTime']
+            endTime = form_data['endTime']
+            if 'date' in form_data:
+                lecture_date = form_data['date']
+            else:
+                lecture_date = datetime.date.today()
+        except KeyError:
+            response_data = {'error_message': "Expecting subject, div, room, startTime and endTime. Date optional."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            subject_name = request.POST.get('subject')
+            div = request.POST.get('div')
+            roomNumber = request.POST.get('room')
+            startTime = request.POST.get('startTime')
+            endTime = request.POST.get('endTime')
+            lecture_date = request.POST.get('number', datetime.date.today())
+
+        yearname, division = div.split("_")
+        year = Div.yearnameToYear(yearname)
+        if datetime.date.today().month < 6:
+            semester = year * 2
+        else:
+            semester = year * 2 - 1
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+            DivisionSubject.objects.get(division=div, subject=subject)
+            h, m, s = startTime.split(':')
+            startTime = datetime.time(int(h), int(m), int(s))
+            h, m, s = endTime.split(':')
+            endTime = datetime.time(int(h), int(m), int(s))
+            if isinstance(lecture_date, str):
+                d, m, y = lecture_date.split('-')
+                lecture_date = datetime.datetime(int(y), int(m), int(d)).date()
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Div.DoesNotExist:
+            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except DivisionSubject.DoesNotExist:
+            response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception:
+            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        teacher = Teacher.objects.get(user=request.user)
+
+        try:
+            lecture = Lecture.objects.get(
+                roomNumber=roomNumber,
+                startTime=startTime,
+                endTime=endTime,
+                date=lecture_date,
+                teacher=teacher,
+                div=div,
+                subject=subject
+            )
+            lecture.delete()
+            deleted = 1
+        except Lecture.DoesNotExist:
+            deleted = 0
+            pass
+
+        return JsonResponse({'deleted': deleted}, status=status.HTTP_200_OK)

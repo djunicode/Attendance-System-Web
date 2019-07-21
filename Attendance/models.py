@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib import auth
 from django.contrib.auth.models import AbstractUser
 import time
+import datetime
 
 
 class AppUser(AbstractUser):
@@ -36,7 +37,7 @@ class Teacher(models.Model):
 
 class Div(models.Model):
     semester = models.PositiveSmallIntegerField()
-    year = models.PositiveSmallIntegerField()
+    calendar_year = models.PositiveIntegerField(default=datetime.date.today().year)
     division = models.CharField(max_length=10)
     subject = models.ManyToManyField(Subject, related_name='division', through="DivisionSubject")
     classteacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)
@@ -56,9 +57,9 @@ class Div(models.Model):
         return yearname + "_" + self.division
 
     def get_class_type(self):
-        if len(self.division) is 1:
+        if len(self.division) == 1:
             return "Class"
-        elif len(self.division) is 2:
+        elif len(self.division) == 2 and self.division[1].isdigit():
             return "Practical"
         else:
             return "Elective"
@@ -77,7 +78,7 @@ class Div(models.Model):
 
 
 class Lecture(models.Model):
-    roomNumber = models.CharField(max_length=10, blank=True)
+    roomNumber = models.CharField(max_length=32, blank=True)
     startTime = models.TimeField(auto_now=False, auto_now_add=False)
     endTime = models.TimeField(auto_now=False, auto_now_add=False)
     date = models.DateField(auto_now=False, auto_now_add=False)
@@ -89,7 +90,7 @@ class Lecture(models.Model):
         return str(self.div) + " " + self.getTimeString()
 
     def getTimeString(self):
-        return self.startTime.strftime("%H:%M %p") + " - " + self.endTime.strftime("%H:%M %p")
+        return self.startTime.strftime("%H:%M:%S") + " - " + self.endTime.strftime("%H:%M:%S")
 
     def getDateTimeString(self):
         return self.date.strftime("%d-%m-%Y") + " : " + self.getTimeString()
