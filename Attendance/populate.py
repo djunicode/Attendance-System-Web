@@ -5,12 +5,14 @@ from datetime import datetime, timedelta, date
 import math
 from faker import Faker
 
+current_year = date.today().year
+
 
 def fillStudent(count=50):
     fake = Faker()
     for year in range(1, 5):
         for sapcnt in range(1, 2 + int(count / 4)):
-            sap = 60004000000 + (19 - year) * 10000 + sapcnt
+            sap = 60004000000 + (current_year - 2000 - year) * 10000 + sapcnt
             user = AppUser.objects.create(username=sap, password='pass@123')
             user.set_password('pass@123')
             user.is_student = True
@@ -37,15 +39,23 @@ def fillTeacher(count=15):
 
 
 def fillSubject():
+    Subject.objects.create(name="BEE", semester=1, subjectCode="FEC105")
+    Subject.objects.create(name="EM", semester=1, subjectCode="FEC106")
     Subject.objects.create(name="SPA", semester=2, subjectCode="FEC205")
-    Subject.objects.create(name="DS", semester=3, subjectCode="FEC305")
-    Subject.objects.create(name="OOPM", semester=3, subjectCode="FEC306")
-    Subject.objects.create(name="COA", semester=4, subjectCode="FEC402")
-    Subject.objects.create(name="AP2", semester=2, subjectCode="FEC202")
-    Subject.objects.create(name="OS", semester=4, subjectCode="FEC404")
-    Subject.objects.create(name="ML", semester=5, subjectCode="FEC501")
-    Subject.objects.create(name="BCF", semester=5, subjectCode="FEC503")
     Subject.objects.create(name="ED", semester=2, subjectCode="FEC206")
+    Subject.objects.create(name="AP2", semester=2, subjectCode="FEC202")
+    Subject.objects.create(name="DS", semester=3, subjectCode="CSC305")
+    Subject.objects.create(name="OOPM", semester=3, subjectCode="CSC306")
+    Subject.objects.create(name="COA", semester=4, subjectCode="CSC402")
+    Subject.objects.create(name="OS", semester=4, subjectCode="CSC404")
+    Subject.objects.create(name="MP", semester=5, subjectCode="CSC501")
+    Subject.objects.create(name="BCE", semester=5, subjectCode="CSC503")
+    Subject.objects.create(name="DWH", semester=6, subjectCode="CSC603")
+    Subject.objects.create(name="SE", semester=6, subjectCode="CSC601")
+    Subject.objects.create(name="MCC", semester=7, subjectCode="CSC702")
+    Subject.objects.create(name="AISC", semester=7, subjectCode="CSC703")
+    Subject.objects.create(name="HMI", semester=8, subjectCode="CSC801")
+    Subject.objects.create(name="DC", semester=8, subjectCode="CSC802")
 
 
 def fillDiv():
@@ -61,7 +71,7 @@ def fillDiv():
             teachers.remove(teacher2)
         else:
             teacher2 = None
-        current_year = date.today().year
+
         Div.objects.create(semester=sem, division='A', classteacher=teacher1, calendar_year=current_year)
         Div.objects.create(semester=sem, division='B', classteacher=teacher2, calendar_year=current_year)
         for b in range(1, 5):
@@ -82,7 +92,7 @@ def fillLecture(count=50):
         lecture.startTime = fake.time_object(end_datetime=None)
         lecture.endTime = fake.time_object(end_datetime=None)
         lecture.div = random.choice(list(Div.objects.all()))
-        lecture.subject = random.choice(list(Subject.objects.all()))
+        lecture.subject = random.choice(list(Subject.objects.filter(semester=lecture.div.semester)))
         lecture.teacher = random.choice(list(Teacher.objects.all()))
         lecture.save()
 
@@ -102,8 +112,9 @@ def fillAll():
     for student in students:
         sap_data = student.sapID % 60004000000
         sap_no = sap_data % 1000
-        year = 19 - (sap_data - sap_no) / 10000
-        divisions = Div.objects.filter(year=year)
+        year = current_year - 2000 - (sap_data - sap_no) / 10000
+        sems = [year * 2, year * 2 - 1]
+        divisions = Div.objects.filter(calendar_year=current_year, semester__in=sems)
         div_alpha = random.choice(['A', 'B'])
         div = div_alpha + random.choice(['1', '2', '3', '4'])
         full_div = divisions.filter(division=div_alpha)

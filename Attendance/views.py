@@ -979,6 +979,47 @@ class GetStudentsAttendance(generics.GenericAPIView):
         return JsonResponse({'attendance': attendance_list}, status=status.HTTP_200_OK)
 
 
+class GetStudentAttendanceHistory(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        subject_name = kwargs['subject']
+        type = kwargs['type']
+
+        user = request.user
+        student = Student.objects.get(user=user)
+        divisions = Div.objects.filter(calendar_year=datetime.date.today().year, student=student)
+
+        try:
+            subject = Subject.objects.get(name=subject_name)
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        if type not in ['Class', 'Practical', 'Elective']:
+            response_data = {'error_message': "Type " + type + " does not match 'Class', 'Practical' or 'Elective'."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        lectures = []
+        for division in divisions:
+            div_has_subject = DivisionSubject.objects.filter(division=division, subject=subject).exists()
+            if division.get_class_type() == type and div_has_subject:
+                lectures.extend(list(Lecture.objects.filter(div=division, subject=subject)))
+
+        lecs_json = []
+        for lec in lectures:
+            if StudentLecture.objects.filter(lecture=lec, student=student).exists():
+                present = 1
+            else:
+                present = 0
+            lecs_json.append({
+                'date': lec.date.strftime("%d-%m-%Y"),
+                'time': lec.getTimeString(),
+                'present': present
+            })
+        return JsonResponse(lecs_json, status=status.HTTP_200_OK, safe=False)
+
+
 class GetSubjectsAndDivisions(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
 
