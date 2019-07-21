@@ -901,7 +901,7 @@ class GetStudentsAttendance(generics.GenericAPIView):
         td = difference.total_seconds() / 60
         if td > 90 and td <= 150:
             return 2
-        elif td>150 and td < 210:
+        elif td > 150 and td < 210:
             return 3
         return 1
 
