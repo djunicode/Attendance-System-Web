@@ -10,7 +10,7 @@ from rest_framework.authtoken.models import Token
 
 from rest_framework import generics, status
 from .models import Teacher, Student, Lecture, Div, Subject, AppUser
-from .models import SubjectTeacher, StudentLecture, StudentDivision, DivisionSubject
+from .models import SubjectTeacher, StudentLecture, StudentDivision
 from .serializers import (TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer,
                           ShortTeacherSerializer)
 from rest_framework.authentication import TokenAuthentication
@@ -851,7 +851,7 @@ class SaveAttendance(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            DivisionSubject.objects.get(division=div, subject=subject)
+            SubjectTeacher.objects.get(div=div, subject=subject)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -866,7 +866,7 @@ class SaveAttendance(generics.GenericAPIView):
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        except DivisionSubject.DoesNotExist:
+        except SubjectTeacher.DoesNotExist:
             response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
@@ -938,7 +938,8 @@ class GetStudentsAttendance(generics.GenericAPIView):
 
         for division in divisions:
             if division.semester % 2 == rem:
-                for subject in division.subject.all():
+                subjects = [st.subject for st in SubjectTeacher.objects.filter(div=division)]
+                for subject in subjects:
                     lectures = Lecture.objects.filter(div=division, subject=subject)
                     type = division.get_class_type()
                     attendance[subject.name + type] = {
@@ -986,7 +987,7 @@ class GetStudentAttendanceHistory(generics.GenericAPIView):
 
         lectures = []
         for division in divisions:
-            div_has_subject = DivisionSubject.objects.filter(division=division, subject=subject).exists()
+            div_has_subject = SubjectTeacher.objects.filter(div=division, subject=subject).exists()
             if division.get_class_type() == type and div_has_subject:
                 lectures.extend(list(Lecture.objects.filter(div=division, subject=subject)))
 
@@ -1059,7 +1060,7 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            DivisionSubject.objects.get(division=div, subject=subject)
+            SubjectTeacher.objects.get(div=div, subject=subject)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -1074,7 +1075,7 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        except DivisionSubject.DoesNotExist:
+        except SubjectTeacher.DoesNotExist:
             response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1146,7 +1147,7 @@ class DeleteLecture(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            DivisionSubject.objects.get(division=div, subject=subject)
+            SubjectTeacher.objects.get(div=div, subject=subject)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -1162,7 +1163,7 @@ class DeleteLecture(generics.GenericAPIView):
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        except DivisionSubject.DoesNotExist:
+        except SubjectTeacher.DoesNotExist:
             response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 

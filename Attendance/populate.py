@@ -1,5 +1,5 @@
 from .models import (Student, AppUser, Teacher, Lecture, Div, Subject,
-                     StudentLecture, SubjectTeacher, DivisionSubject, StudentDivision, DivisionTeacher)
+                     StudentLecture, SubjectTeacher, StudentDivision)
 import random
 from datetime import datetime, timedelta, date
 import math
@@ -97,8 +97,6 @@ def fillLecture(count=50):
         lecture.save()
 
         SubjectTeacher.objects.get_or_create(subject=lecture.subject, teacher=lecture.teacher, div=lecture.div)
-        DivisionTeacher.objects.get_or_create(division=lecture.div, teacher=lecture.teacher)
-        DivisionSubject.objects.get_or_create(division=lecture.div, subject=lecture.subject)
 
 
 def fillAll():
@@ -128,12 +126,6 @@ def fillAll():
     weighted_random = [True] * 9 + [False] * 1
 
     for div in divisions:
-        subjects = Subject.objects.filter(semester=div.semester)
-        for subject in subjects:
-            DivisionSubject.objects.create(
-                subject=subject,
-                division=div
-            )
         studentdiv = StudentDivision.objects.filter(division=div)
         lectures = Lecture.objects.filter(div=div)
         for sd in studentdiv:

@@ -39,9 +39,7 @@ class Div(models.Model):
     semester = models.PositiveSmallIntegerField()
     calendar_year = models.PositiveIntegerField(default=datetime.date.today().year)
     division = models.CharField(max_length=10)
-    subject = models.ManyToManyField(Subject, related_name='division', through="DivisionSubject")
     classteacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)
-    teacher = models.ManyToManyField(Teacher, related_name='division', through="DivisionTeacher")
 
     def __str__(self):
         yearname = ""
@@ -120,16 +118,6 @@ class SubjectTeacher(models.Model):
     div = models.ForeignKey(Div, on_delete=models.CASCADE, null=True)
 
 
-class DivisionSubject(models.Model):
-    division = models.ForeignKey(Div, on_delete=models.CASCADE)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-
-
 class StudentDivision(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     division = models.ForeignKey(Div, on_delete=models.CASCADE)
-
-
-class DivisionTeacher(models.Model):
-    division = models.ForeignKey(Div, on_delete=models.CASCADE)
-    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
