@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import AppUser, Subject, Lecture, Div, Teacher, Student
+from .models import SubjectTeacher, StudentLecture, StudentDivision, DivisionSubject
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .forms import UserCreateForm
 
@@ -33,3 +34,7 @@ admin.site.register(Lecture)
 admin.site.register(Div)
 admin.site.register(Student)
 admin.site.register(Teacher)
+admin.site.register(SubjectTeacher)
+admin.site.register(StudentLecture)
+admin.site.register(StudentDivision)
+admin.site.register(DivisionSubject)
