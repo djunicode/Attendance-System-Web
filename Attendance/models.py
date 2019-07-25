@@ -83,6 +83,7 @@ class Lecture(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)
     div = models.ForeignKey(Div, on_delete=models.PROTECT)
     subject = models.ForeignKey(Subject, on_delete=models.PROTECT)
+    attendanceTaken = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.div) + " " + self.getTimeString()
