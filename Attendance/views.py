@@ -886,30 +886,15 @@ class SaveAttendance(generics.GenericAPIView):
 
         student_objects = Student.objects.filter(sapID__in=[int(student['sapID']) for student in students])
 
-        attendance_count = 0
-
         for student in students:
             student_object = student_objects.get(sapID=int(student['sapID']))
             if student['Attendance'] == 1:
                 StudentLecture.objects.get_or_create(student=student_object, lecture=lecture)
-                attendance_count += 1
             else:
                 try:
                     StudentLecture.objects.get(student=student_object, lecture=lecture).delete()
                 except StudentLecture.DoesNotExist:
                     pass
-
-        if attendance_count == 0:
-            lecture.delete()
-
-            return JsonResponse({
-                'subject': None,
-                'div': None,
-                'room': None,
-                'startTime': None,
-                'endTime': None,
-                'date': None
-            }, status=status.HTTP_200_OK)
 
         return JsonResponse({
             'subject': lecture.subject.name,
