@@ -706,8 +706,6 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                     subject=ttlecture.subject
                 )
 
-                lecture_json = LectureSerializer(lecture).data
-
             except Lecture.DoesNotExist:
                 lecture = Lecture(
                     roomNumber=ttlecture.roomNumber,
@@ -719,9 +717,9 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                     subject=ttlecture.subject
                 )
 
-                lecture_json = LectureSerializer(lecture).data
-
+            lecture_json = LectureSerializer(lecture).data
             lecture_json['type'] = lecture.div.get_class_type()
+            lecture_json['attendanceTaken'] = 1 if lecture.attendanceTaken else 0
             predicted_lectures.append(lecture_json)
 
         return JsonResponse({
