@@ -11,7 +11,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework import generics, status
 from .models import Teacher, Student, Lecture, Div, Subject, AppUser
 from .models import SubjectTeacher, StudentLecture, StudentDivision, DivisionSubject
-from .serializers import (TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer)
+from .serializers import (TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer,
+                          ShortTeacherSerializer)
 from rest_framework.authentication import TokenAuthentication
 import datetime
 import csv
@@ -219,7 +220,7 @@ class GenericLoginView(generics.GenericAPIView):
             if user.is_student:
                 response_data['user'] = StudentSerializer(Student.objects.get(user=user)).data
             else:
-                response_data['user'] = TeacherSerializer(Teacher.objects.get(user=user)).data
+                response_data['user'] = ShortTeacherSerializer(Teacher.objects.get(user=user)).data
 
             return JsonResponse(response_data, status=status.HTTP_200_OK)
         else:
