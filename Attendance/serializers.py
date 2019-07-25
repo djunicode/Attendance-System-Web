@@ -52,4 +52,4 @@ class LectureSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Lecture
-        fields = ('roomNumber', 'timing', 'date', 'subject', 'teacher', 'div')
+        fields = ('roomNumber', 'timing', 'date', 'subject', 'teacher', 'div', 'attendanceTaken')

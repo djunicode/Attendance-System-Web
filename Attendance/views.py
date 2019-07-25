@@ -263,9 +263,9 @@ class GetAttendanceOfDay(generics.GenericAPIView):
         teacher = Teacher.objects.get(user=request.user)
 
         if div.classteacher is teacher:
-            lecs = Lecture.objects.filter(date=date, div=div, subject=subject)
+            lecs = Lecture.objects.filter(date=date, div=div, subject=subject, attendanceTaken=True)
         else:
-            lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject)
+            lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject, attendanceTaken=True)
 
         attendance_list = {}
 
@@ -355,36 +355,12 @@ class GetAttendanceOfRange(generics.GenericAPIView):
         teacher = Teacher.objects.get(user=request.user)
 
         if div.classteacher is teacher:
-            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject)
+            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject,
+                                          attendanceTaken=True)
         else:
             lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, teacher=teacher,
-                                          div=div, subject=subject)
+                                          div=div, subject=subject, attendanceTaken=True)
 
-        # if lecs:
-        #     student_list = Student.objects.filter(div=div)
-        #     student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
-
-        #     attendance_list = []
-
-        #     for student in student_list:
-        #         relevant_student_lectures = student_lectures.filter(student=student)
-        #         student_json = StudentSerializer(student).data
-        #         student_json["attendance_count"] = len(relevant_student_lectures)
-        #         student_json["attendance_percentage"] = len(relevant_student_lectures) * 100 / len(lecs)
-        #         attendance_list.append(student_json)
-
-        #     attendance_list.sort(key=lambda x: x["sapID"])
-
-        #     response_data = {
-        #         'attendance': attendance_list,
-        #     }
-
-        # else:
-        #     response_data = {
-        #         'attendance': [],
-        #     }
-
-        # return JsonResponse(response_data, status=status.HTTP_200_OK)
         attendance_list = {}
 
         for lec in lecs:
@@ -467,9 +443,9 @@ class GetAttendanceOfStudent(generics.GenericAPIView):
         teacher = Teacher.objects.get(user=request.user)
 
         if teacher in class_teacher_list:
-            lecs = Lecture.objects.filter(div__in=divs, subject=subject)
+            lecs = Lecture.objects.filter(div__in=divs, subject=subject, attendanceTaken=True)
         else:
-            lecs = Lecture.objects.filter(teacher=teacher, div__in=divs, subject=subject)
+            lecs = Lecture.objects.filter(teacher=teacher, div__in=divs, subject=subject, attendanceTaken=True)
 
         if lecs:
             lecs = list(lecs)
@@ -624,10 +600,11 @@ class DownloadCsv(generics.GenericAPIView):
         teacher = Teacher.objects.get(user=request.user)
 
         if div.classteacher is teacher:
-            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject)
+            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject,
+                                          attendanceTaken=True)
         else:
             lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, teacher=teacher,
-                                          div=div, subject=subject)
+                                          div=div, subject=subject, attendanceTaken=True)
 
         student_list = Student.objects.filter(div=div)
         student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
@@ -730,10 +707,6 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                 )
 
                 lecture_json = LectureSerializer(lecture).data
-                if len(StudentLecture.objects.filter(lecture=lecture)) > 0:
-                    lecture_json['attendanceTaken'] = 1
-                else:
-                    lecture_json['attendanceTaken'] = 0
 
             except Lecture.DoesNotExist:
                 lecture = Lecture(
@@ -747,7 +720,6 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                 )
 
                 lecture_json = LectureSerializer(lecture).data
-                lecture_json['attendanceTaken'] = 0
 
             lecture_json['type'] = lecture.div.get_class_type()
             predicted_lectures.append(lecture_json)
@@ -896,6 +868,9 @@ class SaveAttendance(generics.GenericAPIView):
                 except StudentLecture.DoesNotExist:
                     pass
 
+        lecture.attendanceTaken = True
+        lecture.save()
+
         return JsonResponse({
             'subject': lecture.subject.name,
             'div': str(lecture.div),
@@ -940,7 +915,7 @@ class GetStudentsAttendance(generics.GenericAPIView):
             if division.semester % 2 == rem:
                 subjects = [st.subject for st in SubjectTeacher.objects.filter(div=division)]
                 for subject in subjects:
-                    lectures = Lecture.objects.filter(div=division, subject=subject)
+                    lectures = Lecture.objects.filter(div=division, subject=subject, attendanceTaken=True)
                     type = division.get_class_type()
                     attendance[subject.name + type] = {
                         'type': type,
@@ -989,7 +964,7 @@ class GetStudentAttendanceHistory(generics.GenericAPIView):
         for division in divisions:
             div_has_subject = SubjectTeacher.objects.filter(div=division, subject=subject).exists()
             if division.get_class_type() == type and div_has_subject:
-                lectures.extend(list(Lecture.objects.filter(div=division, subject=subject)))
+                lectures.extend(list(Lecture.objects.filter(div=division, subject=subject, attendanceTaken=True)))
 
         lecs_json = []
         lectures = sorted(lectures, key=lambda lec: lec.date, reverse=True)
