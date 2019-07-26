@@ -11,6 +11,16 @@ class TeacherSerializer(serializers.ModelSerializer):
         fields = ('name', 'specialization', 'teacherID', 'subject')
 
 
+class ShortTeacherSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='__str__')
+    sapID = serializers.CharField(source='teacherID')
+
+    class Meta:
+
+        model = Teacher
+        fields = ('name', 'specialization', 'sapID')
+
+
 class StudentSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source='__str__')
 
@@ -42,4 +52,4 @@ class LectureSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Lecture
-        fields = ('roomNumber', 'timing', 'date', 'subject', 'teacher', 'div')
+        fields = ('roomNumber', 'timing', 'date', 'subject', 'teacher', 'div', 'attendanceTaken')

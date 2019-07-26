@@ -8,9 +8,13 @@ import datetime
 class AppUser(AbstractUser):
     is_student = models.BooleanField(default=False)
     is_teacher = models.BooleanField(default=False)
+    middle_name = models.CharField(max_length=32, null=True, default=None)
 
     def getfullname(self):
-        return self.first_name + " " + self.last_name
+        if self.middle_name:
+            return self.first_name + " " + self.middle_name + " " + self.last_name
+        else:
+            return self.first_name + " " + self.last_name
 
     def __str__(self):
         return self.username
@@ -39,9 +43,7 @@ class Div(models.Model):
     semester = models.PositiveSmallIntegerField()
     calendar_year = models.PositiveIntegerField(default=datetime.date.today().year)
     division = models.CharField(max_length=10)
-    subject = models.ManyToManyField(Subject, related_name='division', through="DivisionSubject")
     classteacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)
-    teacher = models.ManyToManyField(Teacher, related_name='division', through="DivisionTeacher")
 
     def __str__(self):
         yearname = ""
@@ -85,6 +87,7 @@ class Lecture(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)
     div = models.ForeignKey(Div, on_delete=models.PROTECT)
     subject = models.ForeignKey(Subject, on_delete=models.PROTECT)
+    attendanceTaken = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.div) + " " + self.getTimeString()
@@ -106,7 +109,7 @@ class Student(models.Model):
         return self.user.getfullname()
 
     def getfullname(self):
-        return self.user.first_name + ' ' + self.user.last_name
+        return self.user.getfullname()
 
 
 class StudentLecture(models.Model):
@@ -120,16 +123,6 @@ class SubjectTeacher(models.Model):
     div = models.ForeignKey(Div, on_delete=models.CASCADE, null=True)
 
 
-class DivisionSubject(models.Model):
-    division = models.ForeignKey(Div, on_delete=models.CASCADE)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-
-
 class StudentDivision(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     division = models.ForeignKey(Div, on_delete=models.CASCADE)
-
-
-class DivisionTeacher(models.Model):
-    division = models.ForeignKey(Div, on_delete=models.CASCADE)
-    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)

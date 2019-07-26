@@ -40,5 +40,6 @@ urlpatterns = [
     path('get-all-subjects-and-divisions/', views.GetSubjectsAndDivisions.as_view(),
          name='get-all-subjects-and-divisions'),
     path('save-lecture-and-get-student-list/', views.SaveLectureAndGetStudentsList.as_view(), name='save-lecture'),
-    path('delete-lecture/', views.DeleteLecture.as_view(), name='delete-lecture')
+    path('delete-lecture/', views.DeleteLecture.as_view(), name='delete-lecture'),
+    path('change-password/', views.ChangePassword.as_view(), name='change-password')
 ]

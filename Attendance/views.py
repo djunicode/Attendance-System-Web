@@ -1,10 +1,8 @@
 from django.shortcuts import render, redirect
-from django.urls import reverse_lazy
 from . import forms
 from django.views.generic import TemplateView
 from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, JsonResponse
 import json
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -12,11 +10,11 @@ from rest_framework.authtoken.models import Token
 
 from rest_framework import generics, status
 from .models import Teacher, Student, Lecture, Div, Subject, AppUser
-from .models import SubjectTeacher, StudentLecture, StudentDivision, DivisionSubject
-from .serializers import (TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer)
+from .models import SubjectTeacher, StudentLecture, StudentDivision
+from .serializers import (TeacherSerializer, StudentSerializer, LectureSerializer, DivSerializer, SubjectSerializer,
+                          ShortTeacherSerializer)
 from rest_framework.authentication import TokenAuthentication
 import datetime
-import time
 import csv
 
 
@@ -222,7 +220,7 @@ class GenericLoginView(generics.GenericAPIView):
             if user.is_student:
                 response_data['user'] = StudentSerializer(Student.objects.get(user=user)).data
             else:
-                response_data['user'] = TeacherSerializer(Teacher.objects.get(user=user)).data
+                response_data['user'] = ShortTeacherSerializer(Teacher.objects.get(user=user)).data
 
             return JsonResponse(response_data, status=status.HTTP_200_OK)
         else:
@@ -265,9 +263,9 @@ class GetAttendanceOfDay(generics.GenericAPIView):
         teacher = Teacher.objects.get(user=request.user)
 
         if div.classteacher is teacher:
-            lecs = Lecture.objects.filter(date=date, div=div, subject=subject)
+            lecs = Lecture.objects.filter(date=date, div=div, subject=subject, attendanceTaken=True)
         else:
-            lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject)
+            lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject, attendanceTaken=True)
 
         attendance_list = {}
 
@@ -357,36 +355,12 @@ class GetAttendanceOfRange(generics.GenericAPIView):
         teacher = Teacher.objects.get(user=request.user)
 
         if div.classteacher is teacher:
-            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject)
+            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject,
+                                          attendanceTaken=True)
         else:
             lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, teacher=teacher,
-                                          div=div, subject=subject)
+                                          div=div, subject=subject, attendanceTaken=True)
 
-        # if lecs:
-        #     student_list = Student.objects.filter(div=div)
-        #     student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
-
-        #     attendance_list = []
-
-        #     for student in student_list:
-        #         relevant_student_lectures = student_lectures.filter(student=student)
-        #         student_json = StudentSerializer(student).data
-        #         student_json["attendance_count"] = len(relevant_student_lectures)
-        #         student_json["attendance_percentage"] = len(relevant_student_lectures) * 100 / len(lecs)
-        #         attendance_list.append(student_json)
-
-        #     attendance_list.sort(key=lambda x: x["sapID"])
-
-        #     response_data = {
-        #         'attendance': attendance_list,
-        #     }
-
-        # else:
-        #     response_data = {
-        #         'attendance': [],
-        #     }
-
-        # return JsonResponse(response_data, status=status.HTTP_200_OK)
         attendance_list = {}
 
         for lec in lecs:
@@ -430,6 +404,21 @@ class GetAttendanceOfRange(generics.GenericAPIView):
 class GetAttendanceOfStudent(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
 
+    def multiple_lectures(self, lecture):
+
+        if lecture.div.get_class_type() == 'Practical':
+            return 1
+
+        start = datetime.datetime.combine(lecture.date, lecture.startTime)
+        end = datetime.datetime.combine(lecture.date, lecture.endTime)
+        difference = end - start
+        td = difference.total_seconds() / 60
+        if td > 90 and td <= 150:
+            return 2
+        elif td > 150 and td < 210:
+            return 3
+        return 1
+
     def get(self, request, *args, **kwargs):
 
         subject_name = kwargs['subject']
@@ -454,9 +443,9 @@ class GetAttendanceOfStudent(generics.GenericAPIView):
         teacher = Teacher.objects.get(user=request.user)
 
         if teacher in class_teacher_list:
-            lecs = Lecture.objects.filter(div__in=divs, subject=subject)
+            lecs = Lecture.objects.filter(div__in=divs, subject=subject, attendanceTaken=True)
         else:
-            lecs = Lecture.objects.filter(teacher=teacher, div__in=divs, subject=subject)
+            lecs = Lecture.objects.filter(teacher=teacher, div__in=divs, subject=subject, attendanceTaken=True)
 
         if lecs:
             lecs = list(lecs)
@@ -472,11 +461,11 @@ class GetAttendanceOfStudent(generics.GenericAPIView):
                 try:
                     StudentLecture.objects.get(student=student, lecture=lecture)
                     lecture_json["attendance"] = 1
-                    attendance_count += 1
+                    attendance_count += self.multiple_lectures(lecture)
                 except StudentLecture.DoesNotExist:
                     lecture_json["attendance"] = 0
 
-                attendance_total += 1
+                attendance_total += self.multiple_lectures(lecture)
                 attendance_list.append(lecture_json)
 
             attendance_percentage = attendance_count * 100 / attendance_total
@@ -611,10 +600,11 @@ class DownloadCsv(generics.GenericAPIView):
         teacher = Teacher.objects.get(user=request.user)
 
         if div.classteacher is teacher:
-            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject)
+            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject,
+                                          attendanceTaken=True)
         else:
             lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, teacher=teacher,
-                                          div=div, subject=subject)
+                                          div=div, subject=subject, attendanceTaken=True)
 
         student_list = Student.objects.filter(div=div)
         student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
@@ -694,9 +684,15 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                     counts[lec.startTime] += 1
                 else:
                     counts[lec.startTime] = 1
+
                 if not max or counts[lec.startTime] > counts[max.startTime]:
                     max = lec
-            lectures.append(max)
+            if max:
+                lectures.append(max)
+
+            for lec in pastlecs:
+                if lec.date == date and lec.startTime in counts and max.startTime != lec.startTime:
+                    lectures.append(lec)
 
         for ttlecture in lectures:
             try:
@@ -710,12 +706,6 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                     subject=ttlecture.subject
                 )
 
-                lecture_json = LectureSerializer(lecture).data
-                if len(StudentLecture.objects.filter(lecture=lecture)) > 0:
-                    lecture_json['attendanceTaken'] = 1
-                else:
-                    lecture_json['attendanceTaken'] = 0
-
             except Lecture.DoesNotExist:
                 lecture = Lecture(
                     roomNumber=ttlecture.roomNumber,
@@ -727,10 +717,9 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                     subject=ttlecture.subject
                 )
 
-                lecture_json = LectureSerializer(lecture).data
-                lecture_json['attendanceTaken'] = 0
-
+            lecture_json = LectureSerializer(lecture).data
             lecture_json['type'] = lecture.div.get_class_type()
+            lecture_json['attendanceTaken'] = 1 if lecture.attendanceTaken else 0
             predicted_lectures.append(lecture_json)
 
         return JsonResponse({
@@ -832,7 +821,7 @@ class SaveAttendance(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            DivisionSubject.objects.get(division=div, subject=subject)
+            SubjectTeacher.objects.get(div=div, subject=subject)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -847,7 +836,7 @@ class SaveAttendance(generics.GenericAPIView):
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        except DivisionSubject.DoesNotExist:
+        except SubjectTeacher.DoesNotExist:
             response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
@@ -876,6 +865,9 @@ class SaveAttendance(generics.GenericAPIView):
                     StudentLecture.objects.get(student=student_object, lecture=lecture).delete()
                 except StudentLecture.DoesNotExist:
                     pass
+
+        lecture.attendanceTaken = True
+        lecture.save()
 
         return JsonResponse({
             'subject': lecture.subject.name,
@@ -919,8 +911,9 @@ class GetStudentsAttendance(generics.GenericAPIView):
 
         for division in divisions:
             if division.semester % 2 == rem:
-                for subject in division.subject.all():
-                    lectures = Lecture.objects.filter(div=division, subject=subject)
+                subjects = [st.subject for st in SubjectTeacher.objects.filter(div=division)]
+                for subject in subjects:
+                    lectures = Lecture.objects.filter(div=division, subject=subject, attendanceTaken=True)
                     type = division.get_class_type()
                     attendance[subject.name + type] = {
                         'type': type,
@@ -967,9 +960,9 @@ class GetStudentAttendanceHistory(generics.GenericAPIView):
 
         lectures = []
         for division in divisions:
-            div_has_subject = DivisionSubject.objects.filter(division=division, subject=subject).exists()
+            div_has_subject = SubjectTeacher.objects.filter(div=division, subject=subject).exists()
             if division.get_class_type() == type and div_has_subject:
-                lectures.extend(list(Lecture.objects.filter(div=division, subject=subject)))
+                lectures.extend(list(Lecture.objects.filter(div=division, subject=subject, attendanceTaken=True)))
 
         lecs_json = []
         lectures = sorted(lectures, key=lambda lec: lec.date, reverse=True)
@@ -1040,7 +1033,7 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            DivisionSubject.objects.get(division=div, subject=subject)
+            SubjectTeacher.objects.get(div=div, subject=subject)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -1055,7 +1048,7 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        except DivisionSubject.DoesNotExist:
+        except SubjectTeacher.DoesNotExist:
             response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1127,7 +1120,7 @@ class DeleteLecture(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            DivisionSubject.objects.get(division=div, subject=subject)
+            SubjectTeacher.objects.get(div=div, subject=subject)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -1143,7 +1136,7 @@ class DeleteLecture(generics.GenericAPIView):
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        except DivisionSubject.DoesNotExist:
+        except SubjectTeacher.DoesNotExist:
             response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1169,4 +1162,30 @@ class DeleteLecture(generics.GenericAPIView):
             deleted = 0
             pass
 
-        return JsonResponse({'deleted': deleted}, status=status.HTTP_200_OK)
+        return JsonResponse({'success': deleted}, status=status.HTTP_200_OK)
+
+
+class ChangePassword(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            form_data = json.loads(request.body.decode())
+            oldpass = form_data['old_password']
+            newpass = form_data['new_password']
+
+        except KeyError:
+            response_data = {'error_message': "Expecting old_password and new_password."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            oldpass = request.POST.get('old_password')
+            newpass = request.POST.get('new_password')
+
+        user = request.user
+        user = authenticate(username=user.username, password=oldpass)
+        if user is not None:
+            user.set_password(newpass)
+            user.save()
+            return JsonResponse({'success': 1}, status=status.HTTP_200_OK)
+
+        return JsonResponse({'success': 0}, status=status.HTTP_200_OK)
