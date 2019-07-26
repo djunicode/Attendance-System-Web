@@ -8,9 +8,13 @@ import datetime
 class AppUser(AbstractUser):
     is_student = models.BooleanField(default=False)
     is_teacher = models.BooleanField(default=False)
+    middle_name = models.CharField(max_length=32, null=True, default=None)
 
     def getfullname(self):
-        return self.first_name + " " + self.last_name
+        if self.middle_name:
+            return self.first_name + " " + self.middle_name + " " + self.last_name
+        else:
+            return self.first_name + " " + self.last_name
 
     def __str__(self):
         return self.username
@@ -30,7 +34,6 @@ class Teacher(models.Model):
     specialization = models.CharField(max_length=50, null=True, blank=True)
     teacherID = models.CharField(max_length=20)
     subject = models.ManyToManyField(Subject, related_name='teacher', through='SubjectTeacher')
-    middle_name = models.CharField(max_length=32, null=True, default=None)
 
     def __str__(self):
         return self.user.getfullname()
