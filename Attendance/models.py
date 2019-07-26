@@ -109,7 +109,7 @@ class Student(models.Model):
         return self.user.getfullname()
 
     def getfullname(self):
-        return self.user.first_name + ' ' + self.user.last_name
+        return self.user.getfullname()
 
 
 class StudentLecture(models.Model):
