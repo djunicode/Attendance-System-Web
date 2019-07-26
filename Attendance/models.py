@@ -30,6 +30,7 @@ class Teacher(models.Model):
     specialization = models.CharField(max_length=50, null=True, blank=True)
     teacherID = models.CharField(max_length=20)
     subject = models.ManyToManyField(Subject, related_name='teacher', through='SubjectTeacher')
+    middle_name = models.CharField(max_length=32, null=True, default=None)
 
     def __str__(self):
         return self.user.getfullname()
