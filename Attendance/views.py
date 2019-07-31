@@ -81,7 +81,7 @@ class TeachersSubjectDataView(generics.GenericAPIView):
         divisions = Div.objects.filter(classteacher=teacher, calendar_year=datetime.date.today().year)
         class_subjects = []
         for div in divisions:
-            class_subjects_ordereddict = Subject.objects.filter(division=div).distinct()
+            class_subjects_ordereddict = list(set([st.subject for st in SubjectTeacher.objects.filter(div=div)]))
             for subject in class_subjects_ordereddict:
                 subject_json = SubjectSerializer(subject).data
                 subject_json["div"] = str(div)
