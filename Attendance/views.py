@@ -634,7 +634,7 @@ class DownloadCsv(generics.GenericAPIView):
 
             student_attended = 0
             for lec in relevant_student_lectures:
-                count = self.multiple_lectures(lec)
+                count = self.multiple_lectures(lec.lecture)
                 student_attended += count
 
             student_json = StudentSerializer(student).data
@@ -652,9 +652,10 @@ class DownloadCsv(generics.GenericAPIView):
 
         csvwriter = csv.writer(response)
 
-        csvwriter.writerow(["SAP ID", "Name", "Attendance Count ("+str(total)+")", "Attendance Percentage"])
+        csvwriter.writerow(["SAP ID", "Name", "Attendance Count (" + str(total) + ")", "Attendance Percentage"])
         for student in attendance_list:
-            csvwriter.writerow([student["sapID"], student["name"], student["attendance_count"], student["attendance_percentage"]])
+            csvwriter.writerow([student["sapID"], student["name"], student["attendance_count"],
+                                student["attendance_percentage"]])
 
         return response
 
