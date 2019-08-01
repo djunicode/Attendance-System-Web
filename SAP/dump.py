@@ -44,8 +44,8 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False):
                 names = [name.capitalize() for name in names]
                 if reverse_names:
                     if len(names) > 2:
-                        user.first_name = names[-1]
-                        user.middle_name = " ".join(names[1:-1])
+                        user.first_name = names[1]
+                        user.middle_name = " ".join(names[2:])
                         user.last_name = names[0]
                     elif len(name) == 2:
                         user.first_name = names[1]
