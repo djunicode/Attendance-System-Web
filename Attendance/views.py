@@ -556,6 +556,21 @@ class EditAttendanceOfDay(generics.GenericAPIView):
 class DownloadCsv(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
 
+    def multiple_lectures(self, lecture):
+
+        if lecture.div.get_class_type() == 'Practical':
+            return 1
+
+        start = datetime.datetime.combine(lecture.date, lecture.startTime)
+        end = datetime.datetime.combine(lecture.date, lecture.endTime)
+        difference = end - start
+        td = difference.total_seconds() / 60
+        if td > 90 and td <= 150:
+            return 2
+        elif td > 150 and td < 210:
+            return 3
+        return 1
+
     def get(self, request, *args, **kwargs):
         subject_name = kwargs['subject']
         div = kwargs['div']
@@ -606,15 +621,26 @@ class DownloadCsv(generics.GenericAPIView):
             lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, teacher=teacher,
                                           div=div, subject=subject, attendanceTaken=True)
 
+        total = 0
+        for lec in lecs:
+            count = self.multiple_lectures(lec)
+            total += count
+
         student_list = Student.objects.filter(div=div)
         student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
         attendance_list = []
         for student in student_list:
             relevant_student_lectures = student_lectures.filter(student=student)
+
+            student_attended = 0
+            for lec in relevant_student_lectures:
+                count = self.multiple_lectures(lec)
+                student_attended += count
+
             student_json = StudentSerializer(student).data
-            student_json["attendance_count"] = len(relevant_student_lectures)
+            student_json["attendance_count"] = student_attended
             if lecs:
-                student_json["attendance_percentage"] = len(relevant_student_lectures) * 100 / len(lecs)
+                student_json["attendance_percentage"] = student_attended * 100 / total
             else:
                 student_json["attendance_percentage"] = 100
             attendance_list.append(student_json)
@@ -626,9 +652,9 @@ class DownloadCsv(generics.GenericAPIView):
 
         csvwriter = csv.writer(response)
 
-        csvwriter.writerow(attendance_list[0].keys())
-        for var in attendance_list:
-            csvwriter.writerow(var.values())
+        csvwriter.writerow(["SAP ID", "Name", "Attendance Count ("+str(total)+")", "Attendance Percentage"])
+        for student in attendance_list:
+            csvwriter.writerow([student["sapID"], student["name"], student["attendance_count"], student["attendance_percentage"]])
 
         return response
 
