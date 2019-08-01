@@ -222,6 +222,8 @@ class GenericLoginView(generics.GenericAPIView):
             else:
                 response_data['user'] = ShortTeacherSerializer(Teacher.objects.get(user=user)).data
 
+            response_data['user']['name'] = user.getname()
+
             return JsonResponse(response_data, status=status.HTTP_200_OK)
         else:
             response_data = {'error_message': "Cannot log you in"}

@@ -40,7 +40,8 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False):
                 found = False
 
             if (not found) or overwrite:
-                names = name.split(' ')
+                names = name.lower().split(' ')
+                names = [name.capitalize() for name in names]
                 if reverse_names:
                     if len(names) > 2:
                         user.first_name = names[-1]
