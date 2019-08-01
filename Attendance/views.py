@@ -811,6 +811,7 @@ class GetStudentListOfLecture(generics.GenericAPIView):
             for student in students_json:
                 student['Attendance'] = 0
                 student['sapID'] = str(student['sapID'])
+                student['name'] = student_object.user.getname()
 
         return JsonResponse({'students': students_json}, status=status.HTTP_200_OK)
 
@@ -1101,6 +1102,7 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
 
         for student in students_json:
             student_object = students.get(sapID=student['sapID'])
+            student['name'] = student_object.user.getname()
             try:
                 StudentLecture.objects.get(lecture=lecture, student=student_object)
                 student['Attendance'] = 1
