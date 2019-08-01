@@ -809,6 +809,7 @@ class GetStudentListOfLecture(generics.GenericAPIView):
 
         except Lecture.DoesNotExist:
             for student in students_json:
+                student_object = students.get(sapID=student['sapID'])
                 student['Attendance'] = 0
                 student['sapID'] = str(student['sapID'])
                 student['name'] = student_object.user.getname()
