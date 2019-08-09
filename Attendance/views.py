@@ -1266,7 +1266,7 @@ class GetPreviousLectureAttendance(generics.GenericAPIView):
         students_json = StudentSerializer(students, many=True).data
 
         days_lectures = Lecture.objects.filter(subject=subject, div=div, date=lec_date, startTime__lte=startTime)
-        lecture = days_lectures.latest('startTime')
+        lecture = days_lectures.filter(attendanceTaken=True).latest('startTime')
         for student in students_json:
             student_object = students.get(sapID=student['sapID'])
             student['name'] = student_object.user.getname()
