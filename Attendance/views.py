@@ -835,7 +835,7 @@ class SaveAttendance(generics.GenericAPIView):
             startTime = escape(form_data['startTime'])
             endTime = escape(form_data['endTime'])
             lecture_date = escape(form_data['date'])
-            students = escape(form_data['students'])
+            students = form_data['students']
         except KeyError:
             response_data = {'error_message': "Expecting subject, div, room, startTime, endTime, date and students."}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
@@ -846,7 +846,7 @@ class SaveAttendance(generics.GenericAPIView):
             startTime = escape(request.POST.get('startTime'))
             endTime = escape(request.POST.get('endTime'))
             lecture_date = escape(request.POST.get('date'))
-            students = escape(request.POST.get('students'))
+            students = request.POST.get('students')
 
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
