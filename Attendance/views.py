@@ -1269,8 +1269,12 @@ class GetPreviousLectureAttendance(generics.GenericAPIView):
         students = Student.objects.filter(div=div)
         students_json = StudentSerializer(students, many=True).data
 
-        days_lectures = Lecture.objects.filter(subject=subject, div=div, date=lec_date, startTime__lte=startTime)
-        lecture = days_lectures.filter(attendanceTaken=True).latest('startTime')
+        try:
+            days_lectures = Lecture.objects.filter(subject=subject, div=div, date=lec_date, startTime__lte=startTime)
+            lecture = days_lectures.filter(attendanceTaken=True).latest('startTime')
+        except Lecture.DoesNotExist:
+            response_data = {'error_message': "No previous lectures on this day"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
         for student in students_json:
             student_object = students.get(sapID=student['sapID'])
             student['name'] = student_object.user.getname()
