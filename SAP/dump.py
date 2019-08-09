@@ -7,8 +7,13 @@ import os
 
 current_year = date.today().year
 
+if date.today().month < 6:
+    current_sem = "even"
+else:
+    current_sem = "odd"
 
-def SAPDump(path, div_name, overwrite=False, reverse_names=False):
+
+def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=None):
     yearname, division = div_name.split("_")
     year = Div.yearnameToYear(yearname)
 
@@ -24,6 +29,10 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False):
         div = Div.objects.get(semester=semester, calendar_year=date.today().year, division=division)
     else:
         div = Div.objects.create(semester=semester, calendar_year=date.today().year, division=division)
+        if classteacher:
+            names = classteacher.strip().split(' ')
+            div.classteacher = Teacher.objects.get(first_name=names[0], last_name=names[1])
+            div.save()
 
     with open(path, 'r') as csvFile:
         reader = csv.reader(csvFile)
@@ -73,3 +82,38 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False):
 
             print(Student.objects.get(user=user))
     csvFile.close()
+
+
+def WorkLoadDump(path, semester=current_sem):
+    with open(path, 'r') as csvFile:
+        reader = csv.reader(csvFile)
+        yr = ''
+        sub = ''
+        for row in reader:
+            if row[0] != '':
+                yr = row[0]
+            if row[1] != '':
+                sub = row[1]
+            if row[2] != '' and row[3] != '':
+                div_names = row[2].split('&')
+                teacher_names = [name.strip().split(' ') for name in row[3].split('/')]
+                year = Div.yearnameToYear(yr.upper())
+                if semester == "even":
+                    sem = year * 2
+                else:
+                    sem = year * 2 - 1
+                subject, _ = Subject.objects.get_or_create(name=sub, semester=sem)
+                divs = Div.objects.filter(
+                    division__in=div_names,
+                    semester=sem,
+                    calendar_year=current_year
+                )
+                users = []
+                for name in teacher_names:
+                    users.append(AppUser.objects.get(first_name=name[0], last_name=name[-1]))
+
+                teachers = Teacher.objects.filter(user__in=users)
+                for teacher in teachers:
+                    for div in divs:
+                        SubjectTeacher.objects.get_or_create(subject=subject, div=div, teacher=teacher)
+                        print(subject, div, teacher)
