@@ -724,7 +724,7 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                 if lec.date == date and lec.startTime in counts and max.startTime != lec.startTime:
                     lectures.append(lec)
 
-        for ttlecture in lectures:
+        for ttlecture in sorted(lectures, key=lambda x: x.startTime):
             try:
                 lecture = Lecture.objects.get(
                     roomNumber=ttlecture.roomNumber,
