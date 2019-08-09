@@ -735,7 +735,10 @@ class GetLectureListOfTheDay(generics.GenericAPIView):
                     div=ttlecture.div,
                     subject=ttlecture.subject
                 )
-                predicted = 0
+                if ttlecture.date == date:
+                    predicted = 0
+                else:
+                    predicted = 1
 
             except Lecture.DoesNotExist:
                 lecture = Lecture(
