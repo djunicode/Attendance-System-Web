@@ -41,7 +41,7 @@ class DivSerializer(serializers.ModelSerializer):
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subject
-        fields = ('name', 'semester', 'subjectCode')
+        fields = ('name', 'semester')
 
 
 class LectureSerializer(serializers.ModelSerializer):

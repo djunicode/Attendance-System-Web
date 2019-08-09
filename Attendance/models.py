@@ -26,10 +26,9 @@ class AppUser(AbstractUser):
 class Subject(models.Model):
     name = models.CharField(max_length=50)
     semester = models.PositiveSmallIntegerField()
-    subjectCode = models.CharField(max_length=10)
 
     def __str__(self):
-        return self.subjectCode + ": " + self.name
+        return self.name + '(sem ' + str(self.semester) + ')'
 
 
 class Teacher(models.Model):
@@ -46,7 +45,7 @@ class Div(models.Model):
     semester = models.PositiveSmallIntegerField()
     calendar_year = models.PositiveIntegerField(default=datetime.date.today().year)
     division = models.CharField(max_length=10)
-    classteacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)
+    classteacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, default=None)
 
     def __str__(self):
         yearname = ""
@@ -116,16 +115,19 @@ class Student(models.Model):
 
 
 class StudentLecture(models.Model):
+    # Saves Attendance of a student
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     lecture = models.ForeignKey(Lecture, on_delete=models.CASCADE)
 
 
 class SubjectTeacher(models.Model):
+    # Ternary relationship that stores which teacher teaches what to which div
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     div = models.ForeignKey(Div, on_delete=models.CASCADE, null=True)
 
 
 class StudentDivision(models.Model):
+    # So that students can be a part of a class, division or practical batch
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     division = models.ForeignKey(Div, on_delete=models.CASCADE)
