@@ -1226,3 +1226,59 @@ class ChangePassword(generics.GenericAPIView):
             return JsonResponse({'success': 1}, status=status.HTTP_200_OK)
 
         return JsonResponse({'success': 0}, status=status.HTTP_200_OK)
+
+
+class GetPreviousLectureAttendance(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated, )
+
+    def get(self, request, *args, **kwargs):
+        subject_name = kwargs['subject']
+        div = kwargs['div']
+        lecture_date = kwargs['date']
+        startTime = kwargs['startTime']
+
+        yearname, division = div.split("_")
+        year = Div.yearnameToYear(yearname)
+        if datetime.date.today().month < 6:
+            semester = year * 2
+        else:
+            semester = year * 2 - 1
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+            h, m, s = startTime.split(':')
+            startTime = datetime.time(int(h), int(m), int(s))
+            d, m, y = lecture_date.split('-')
+            lec_date = datetime.datetime(int(y), int(m), int(d)).date()
+
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Div.DoesNotExist:
+            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception:
+            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        students = Student.objects.filter(div=div)
+        students_json = StudentSerializer(students, many=True).data
+
+        days_lectures = Lecture.objects.filter(subject=subject, div=div, date=lec_date, startTime__lte=startTime)
+        lecture = days_lectures.latest('startTime')
+        for student in students_json:
+            student_object = students.get(sapID=student['sapID'])
+            student['name'] = student_object.user.getname()
+            try:
+                StudentLecture.objects.get(lecture=lecture, student=student_object)
+                student['Attendance'] = 1
+            except StudentLecture.DoesNotExist:
+                student['Attendance'] = 0
+            student['sapID'] = str(student['sapID'])
+
+        return JsonResponse({
+            'students': students_json,
+            'lecture': LectureSerializer(lecture).data
+        }, status=status.HTTP_200_OK)
