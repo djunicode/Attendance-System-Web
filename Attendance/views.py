@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.utils.html import escape
 from . import forms
 from django.views.generic import TemplateView
 from django.contrib.auth import logout, authenticate, login
@@ -116,11 +117,11 @@ class LoginTeacherView(generics.GenericAPIView):
 
         try:
             form_data = json.loads(request.body.decode())
-            teacherId = form_data['teacherId']
-            password = form_data['password']
+            teacherId = escape(form_data['teacherId'])
+            password = escape(form_data['password'])
         except Exception:
-            teacherId = request.POST.get('teacherId')
-            password = request.POST.get('password')
+            teacherId = escape(request.POST.get('teacherId'))
+            password = escape(request.POST.get('password'))
 
         teacher = Teacher.objects.get(teacherID=teacherId)
         user = authenticate(username=teacher.user.username, password=password)
@@ -157,17 +158,17 @@ class SignUpTeacherView(generics.GenericAPIView):
 
         try:
             form_data = json.loads(request.body.decode())
-            teacherId = form_data['teacherId']
-            password = form_data['password']
-            f_name = form_data['fname']
-            l_name = form_data['lname']
-            specialization = form_data['spec']
+            teacherId = escape(form_data['teacherId'])
+            password = escape(form_data['password'])
+            f_name = escape(form_data['fname'])
+            l_name = escape(form_data['lname'])
+            specialization = escape(form_data['spec'])
         except Exception:
-            teacherId = request.POST.get('teacherId')
-            password = request.POST.get('password')
-            f_name = request.POST.get('fname')
-            l_name = request.POST.get('lname')
-            specialization = request.POST.get('spec')
+            teacherId = escape(request.POST.get('teacherId'))
+            password = escape(request.POST.get('password'))
+            f_name = escape(request.POST.get('fname'))
+            l_name = escape(request.POST.get('lname'))
+            specialization = escape(request.POST.get('spec'))
 
         try:
             user = AppUser.objects.create(username=teacherId, password=password)
@@ -199,11 +200,11 @@ class GenericLoginView(generics.GenericAPIView):
 
         try:
             form_data = json.loads(request.body.decode())
-            user_id = form_data['id']
-            password = form_data['password']
+            user_id = escape(form_data['id'])
+            password = escape(form_data['password'])
         except Exception:
-            user_id = request.POST.get('id')
-            password = request.POST.get('password')
+            user_id = escape(request.POST.get('id'))
+            password = escape(request.POST.get('password'))
 
         user = authenticate(username=user_id, password=password)
 
@@ -828,24 +829,24 @@ class SaveAttendance(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         try:
             form_data = json.loads(request.body.decode())
-            subject_name = form_data['subject']
-            div = form_data['div']
-            roomNumber = form_data['room']
-            startTime = form_data['startTime']
-            endTime = form_data['endTime']
-            lecture_date = form_data['date']
-            students = form_data['students']
+            subject_name = escape(form_data['subject'])
+            div = escape(form_data['div'])
+            roomNumber = escape(form_data['room'])
+            startTime = escape(form_data['startTime'])
+            endTime = escape(form_data['endTime'])
+            lecture_date = escape(form_data['date'])
+            students = escape(form_data['students'])
         except KeyError:
             response_data = {'error_message': "Expecting subject, div, room, startTime, endTime, date and students."}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
-            subject_name = request.POST.get('subject')
-            div = request.POST.get('div')
-            roomNumber = request.POST.get('room')
-            startTime = request.POST.get('startTime')
-            endTime = request.POST.get('endTime')
-            lecture_date = request.POST.get('date')
-            students = request.POST.get('students')
+            subject_name = escape(request.POST.get('subject'))
+            div = escape(request.POST.get('div'))
+            roomNumber = escape(request.POST.get('room'))
+            startTime = escape(request.POST.get('startTime'))
+            endTime = escape(request.POST.get('endTime'))
+            lecture_date = escape(request.POST.get('date'))
+            students = escape(request.POST.get('students'))
 
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
@@ -1042,22 +1043,22 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         try:
             form_data = json.loads(request.body.decode())
-            subject_name = form_data['subject']
-            div = form_data['div']
-            roomNumber = form_data['room']
-            startTime = form_data['startTime']
-            endTime = form_data['endTime']
-            lecture_date = form_data['date']
+            subject_name = escape(form_data['subject'])
+            div = escape(form_data['div'])
+            roomNumber = escape(form_data['room'])
+            startTime = escape(form_data['startTime'])
+            endTime = escape(form_data['endTime'])
+            lecture_date = escape(form_data['date'])
         except KeyError:
             response_data = {'error_message': "Expecting subject, div, room, startTime, endTime and date."}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
-            subject_name = request.POST.get('subject')
-            div = request.POST.get('div')
-            roomNumber = request.POST.get('room')
-            startTime = request.POST.get('startTime')
-            endTime = request.POST.get('endTime')
-            lecture_date = request.POST.get('date')
+            subject_name = escape(request.POST.get('subject'))
+            div = escape(request.POST.get('div'))
+            roomNumber = escape(request.POST.get('room'))
+            startTime = escape(request.POST.get('startTime'))
+            endTime = escape(request.POST.get('endTime'))
+            lecture_date = escape(request.POST.get('date'))
 
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
@@ -1127,25 +1128,25 @@ class DeleteLecture(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         try:
             form_data = json.loads(request.body.decode())
-            subject_name = form_data['subject']
-            div = form_data['div']
-            roomNumber = form_data['room']
-            startTime = form_data['startTime']
-            endTime = form_data['endTime']
+            subject_name = escape(form_data['subject'])
+            div = escape(form_data['div'])
+            roomNumber = escape(form_data['room'])
+            startTime = escape(form_data['startTime'])
+            endTime = escape(form_data['endTime'])
             if 'date' in form_data:
-                lecture_date = form_data['date']
+                lecture_date = escape(form_data['date'])
             else:
                 lecture_date = datetime.date.today()
         except KeyError:
             response_data = {'error_message': "Expecting subject, div, room, startTime and endTime. Date optional."}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
-            subject_name = request.POST.get('subject')
-            div = request.POST.get('div')
-            roomNumber = request.POST.get('room')
-            startTime = request.POST.get('startTime')
-            endTime = request.POST.get('endTime')
-            lecture_date = request.POST.get('number', datetime.date.today())
+            subject_name = escape(request.POST.get('subject'))
+            div = escape(request.POST.get('div'))
+            roomNumber = escape(request.POST.get('room'))
+            startTime = escape(request.POST.get('startTime'))
+            endTime = escape(request.POST.get('endTime'))
+            lecture_date = escape(request.POST.get('number', datetime.date.today()))
 
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
