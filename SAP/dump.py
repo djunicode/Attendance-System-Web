@@ -117,3 +117,14 @@ def WorkLoadDump(path, semester=current_sem):
                     for div in divs:
                         SubjectTeacher.objects.get_or_create(subject=subject, div=div, teacher=teacher)
                         print(subject, div, teacher)
+
+
+def createTeacher(id, f_name, l_name, spec="Computer Engineering"):
+    user = AppUser.objects.create(username=id, password="pass@123")
+    user.set_password('pass@123')
+    user.first_name = f_name
+    user.last_name = l_name
+    user.is_teacher = True
+    user.save()
+    teacher = Teacher.objects.create(user=user, teacherID=id, specialization=spec)
+    print(teacher)
