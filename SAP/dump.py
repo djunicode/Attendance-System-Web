@@ -57,7 +57,7 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=N
                             user.first_name = names[1]
                             user.middle_name = " ".join(names[2:])
                             user.last_name = names[0]
-                        elif len(name) == 2:
+                        elif len(names) == 2:
                             user.first_name = names[1]
                             user.last_name = names[0]
                         else:
@@ -68,7 +68,7 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=N
                             user.first_name = names[0]
                             user.middle_name = " ".join(names[1:-1])
                             user.last_name = names[-1]
-                        elif len(name) == 2:
+                        elif len(names) == 2:
                             user.first_name = names[0]
                             user.last_name = names[1]
                         else:
