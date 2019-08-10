@@ -114,7 +114,10 @@ def WorkLoadDump(path, semester=current_sem):
                 )
                 users = []
                 for name in teacher_names:
-                    users.append(AppUser.objects.get(first_name=name[0], last_name=name[-1]))
+                    try:
+                        users.append(AppUser.objects.get(first_name=name[0], last_name=name[-1]))
+                    except AppUser.DoesNotExist:
+                        print(name[0] + " " + name[1] + " not found")
 
                 teachers = Teacher.objects.filter(user__in=users)
                 for teacher in teachers:
