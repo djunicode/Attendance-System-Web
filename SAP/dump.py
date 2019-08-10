@@ -82,10 +82,12 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=N
 
                 if not found:
                     student = Student.objects.create(user=user, sapID=sap)
+                else:
+                    student = Student.objects.get(user=user)
 
                 StudentDivision.objects.get_or_create(student=student, division=div)
 
-                print(Student.objects.get(user=user))
+                print(student)
     csvFile.close()
 
 
