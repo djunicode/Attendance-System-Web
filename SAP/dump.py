@@ -38,7 +38,7 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=N
         reader = csv.reader(csvFile)
         for row in reader:
             if len(row[1]) and len(row[2]):
-                name = row[2]
+                name = row[2].lower()
                 sap = int(row[1])
                 try:
                     user = AppUser.objects.get(username=sap)
@@ -50,7 +50,7 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=N
                     found = False
 
                 if (not found) or overwrite:
-                    names = name.lower().split(' ')
+                    names = name.split(' ')
                     names = [name.capitalize() for name in names]
                     if reverse_names:
                         if len(names) > 2:
