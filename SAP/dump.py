@@ -159,10 +159,10 @@ def fillPracs(div_name, end1, end2, end3):
     students = Student.objects.filter(div=div)
     for student in students:
         if student.sapID <= end1:
-            StudentDivision.objects.create(student=student, division=p1)
+            print(StudentDivision.objects.create(student=student, division=p1))
         elif student.sapID <= end2:
-            StudentDivision.objects.create(student=student, division=p2)
+            print(StudentDivision.objects.create(student=student, division=p2))
         elif student.sapID <= end3:
-            StudentDivision.objects.create(student=student, division=p3)
+            print(StudentDivision.objects.create(student=student, division=p3))
         else:
-            StudentDivision.objects.create(student=student, division=p4)
+            print(StudentDivision.objects.create(student=student, division=p4))
