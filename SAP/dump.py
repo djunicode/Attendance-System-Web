@@ -28,11 +28,14 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=N
     elif div_exists:
         div = Div.objects.get(semester=semester, calendar_year=date.today().year, division=division)
     else:
-        div = Div.objects.create(semester=semester, calendar_year=date.today().year, division=division)
         if classteacher:
             names = classteacher.strip().split(' ')
-            div.classteacher = Teacher.objects.get(user=AppUser.objects.get(first_name=names[0], last_name=names[1]))
+            teacher = Teacher.objects.get(user=AppUser.objects.get(first_name=names[0], last_name=names[1]))
+            div = Div.objects.create(semester=semester, calendar_year=date.today().year, division=division)
+            div.classteacher = teacher
             div.save()
+        else:
+            div = Div.objects.create(semester=semester, calendar_year=date.today().year, division=division)
 
     with open(path, 'r') as csvFile:
         reader = csv.reader(csvFile)
