@@ -662,6 +662,80 @@ class DownloadCsv(generics.GenericAPIView):
 
         return response
 
+
+class DownloadWeeksAttendance(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        subject_name = kwargs['subject']
+        div = kwargs['div']
+
+        try:
+            date = kwargs['date']
+            d, m, y = date.split('-')
+            date = datetime.datetime(int(y), int(m), int(d)).date()
+        except KeyError:
+            date = datetime.date.today()
+
+        yearname, division = div.split("_")
+        year = Div.yearnameToYear(yearname)
+        if date.month < 6:
+            semester = year * 2
+        else:
+            semester = year * 2 - 1
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Div.DoesNotExist:
+            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        teacher = Teacher.objects.get(user=request.user)
+
+        current_week = date.isocalendar()[1]
+
+        if div.classteacher is teacher:
+            lecs = Lecture.objects.filter(date__week=current_week, div=div, subject=subject,
+                                          attendanceTaken=True).order_by('date')
+        else:
+            lecs = Lecture.objects.filter(date__week=current_week, teacher=teacher, div=div,
+                                          subject=subject, attendanceTaken=True).order_by('date')
+
+        student_list = Student.objects.filter(div=div).order_by('sapID')
+        student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
+
+        attendance_sheet = []
+
+        for student in student_list:
+            student_row = [student.sapID, str(student)]
+            for lec in lecs:
+                if student_lectures.filter(lecture=lec, student=student).exists():
+                    student_row.append('P')
+                else:
+                    student_row.append('A')
+            attendance_sheet.append(student_row)
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'blob; filename="AttendanceData.csv"'
+
+        csvwriter = csv.writer(response)
+
+        header_row = ["SAP ID", "Name"]
+
+        for lec in lecs:
+            header_row.append(lec.getDateTimeString())
+
+        csvwriter.writerow(header_row)
+        for row in attendance_sheet:
+            csvwriter.writerow(row)
+
+        return response
+
 # Android EndPoint Views
 
 
