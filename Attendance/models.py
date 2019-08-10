@@ -119,6 +119,9 @@ class StudentLecture(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     lecture = models.ForeignKey(Lecture, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return str(self.student) + " " + str(self.lecture)
+
 
 class SubjectTeacher(models.Model):
     # Ternary relationship that stores which teacher teaches what to which div
@@ -126,8 +129,14 @@ class SubjectTeacher(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     div = models.ForeignKey(Div, on_delete=models.CASCADE, null=True)
 
+    def __str__(self):
+        return str(self.teacher) + " " + str(self.subject) + " " + str(self.div)
+
 
 class StudentDivision(models.Model):
     # So that students can be a part of a class, division or practical batch
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     division = models.ForeignKey(Div, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.student) + " " + str(self.division)

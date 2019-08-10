@@ -28,59 +28,66 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=N
     elif div_exists:
         div = Div.objects.get(semester=semester, calendar_year=date.today().year, division=division)
     else:
-        div = Div.objects.create(semester=semester, calendar_year=date.today().year, division=division)
         if classteacher:
             names = classteacher.strip().split(' ')
-            div.classteacher = Teacher.objects.get(first_name=names[0], last_name=names[1])
+            teacher = Teacher.objects.get(user=AppUser.objects.get(first_name=names[0], last_name=names[1]))
+            div = Div.objects.create(semester=semester, calendar_year=date.today().year, division=division)
+            div.classteacher = teacher
             div.save()
+        else:
+            div = Div.objects.create(semester=semester, calendar_year=date.today().year, division=division)
 
     with open(path, 'r') as csvFile:
         reader = csv.reader(csvFile)
         for row in reader:
-            name = row[2]
-            sap = int(row[1])
-            try:
-                user = AppUser.objects.get(username=sap)
-                found = True
-            except AppUser.DoesNotExist:
-                user = AppUser.objects.create(username=sap, password='pass@123')
-                user.set_password('pass@123')
-                user.is_student = True
-                found = False
+            if len(row[1]) and len(row[2]):
+                name = row[2].lower()
+                sap = int(row[1])
+                try:
+                    user = AppUser.objects.get(username=sap)
+                    found = True
+                except AppUser.DoesNotExist:
+                    user = AppUser.objects.create(username=sap, password='pass@123')
+                    user.set_password('pass@123')
+                    user.is_student = True
+                    found = False
 
-            if (not found) or overwrite:
-                names = name.lower().split(' ')
-                names = [name.capitalize() for name in names]
-                if reverse_names:
-                    if len(names) > 2:
-                        user.first_name = names[1]
-                        user.middle_name = " ".join(names[2:])
-                        user.last_name = names[0]
-                    elif len(name) == 2:
-                        user.first_name = names[1]
-                        user.last_name = names[0]
+                if (not found) or overwrite:
+                    names = name.split(' ')
+                    names = [name.capitalize() for name in names]
+                    if reverse_names:
+                        if len(names) > 2:
+                            user.first_name = names[1]
+                            user.middle_name = " ".join(names[2:])
+                            user.last_name = names[0]
+                        elif len(names) == 2:
+                            user.first_name = names[1]
+                            user.last_name = names[0]
+                        else:
+                            user.first_name = name
+                            user.last_name = ""
                     else:
-                        user.first_name = name
-                        user.last_name = ""
+                        if len(names) > 2:
+                            user.first_name = names[0]
+                            user.middle_name = " ".join(names[1:-1])
+                            user.last_name = names[-1]
+                        elif len(names) == 2:
+                            user.first_name = names[0]
+                            user.last_name = names[1]
+                        else:
+                            user.first_name = name
+                            user.last_name = ""
+
+                    user.save()
+
+                if not found:
+                    student = Student.objects.create(user=user, sapID=sap)
                 else:
-                    if len(names) > 2:
-                        user.first_name = names[0]
-                        user.middle_name = " ".join(names[1:-1])
-                        user.last_name = names[-1]
-                    elif len(name) == 2:
-                        user.first_name = names[0]
-                        user.last_name = names[1]
-                    else:
-                        user.first_name = name
-                        user.last_name = ""
+                    student = Student.objects.get(user=user)
 
-                user.save()
+                StudentDivision.objects.get_or_create(student=student, division=div)
 
-            if not found:
-                student = Student.objects.create(user=user, sapID=sap)
-                StudentDivision.objects.create(student=student, division=div)
-
-            print(Student.objects.get(user=user))
+                print(student)
     csvFile.close()
 
 
@@ -110,10 +117,55 @@ def WorkLoadDump(path, semester=current_sem):
                 )
                 users = []
                 for name in teacher_names:
-                    users.append(AppUser.objects.get(first_name=name[0], last_name=name[-1]))
+                    try:
+                        users.append(AppUser.objects.get(first_name=name[0], last_name=name[-1]))
+                    except AppUser.DoesNotExist:
+                        print(name[0] + " " + name[1] + " not found")
 
                 teachers = Teacher.objects.filter(user__in=users)
                 for teacher in teachers:
                     for div in divs:
                         SubjectTeacher.objects.get_or_create(subject=subject, div=div, teacher=teacher)
                         print(subject, div, teacher)
+
+
+def createTeacher(id, f_name, l_name, spec="Computer Engineering"):
+    user = AppUser.objects.create(username=id, password="pass@123")
+    user.set_password('pass@123')
+    user.first_name = f_name
+    user.last_name = l_name
+    user.is_teacher = True
+    user.save()
+    teacher = Teacher.objects.create(user=user, teacherID=id, specialization=spec)
+    print(teacher)
+
+
+def fillPracs(div_name, end1, end2, end3):
+    yearname, division = div_name.split("_")
+    year = Div.yearnameToYear(yearname)
+
+    if date.today().month < 6:
+        semester = year * 2
+    elif date.today().month > 6:
+        semester = year * 2 - 1
+
+    div = Div.objects.get(semester=semester, calendar_year=date.today().year, division=division)
+    p1 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+                            division=division + "1")
+    p2 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+                            division=division + "2")
+    p3 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+                            division=division + "3")
+    p4 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+                            division=division + "4")
+
+    students = Student.objects.filter(div=div)
+    for student in students:
+        if student.sapID <= end1:
+            print(StudentDivision.objects.create(student=student, division=p1))
+        elif student.sapID <= end2:
+            print(StudentDivision.objects.create(student=student, division=p2))
+        elif student.sapID <= end3:
+            print(StudentDivision.objects.create(student=student, division=p3))
+        else:
+            print(StudentDivision.objects.create(student=student, division=p4))

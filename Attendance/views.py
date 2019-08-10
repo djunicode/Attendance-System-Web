@@ -1235,7 +1235,6 @@ class GetPreviousLectureAttendance(generics.GenericAPIView):
     permission_classes = (IsAuthenticated, )
 
     def get(self, request, *args, **kwargs):
-        subject_name = kwargs['subject']
         div = kwargs['div']
         lecture_date = kwargs['date']
         startTime = kwargs['startTime']
@@ -1247,16 +1246,11 @@ class GetPreviousLectureAttendance(generics.GenericAPIView):
         else:
             semester = year * 2 - 1
         try:
-            subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             d, m, y = lecture_date.split('-')
             lec_date = datetime.datetime(int(y), int(m), int(d)).date()
-
-        except Subject.DoesNotExist:
-            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
-            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         except Div.DoesNotExist:
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
@@ -1287,5 +1281,6 @@ class GetPreviousLectureAttendance(generics.GenericAPIView):
 
         return JsonResponse({
             'students': students_json,
-            'lecture': LectureSerializer(lecture).data
+            'subject': lecture.subject.name,
+            'timing': lecture.getTimeString()
         }, status=status.HTTP_200_OK)
