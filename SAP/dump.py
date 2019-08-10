@@ -135,3 +135,34 @@ def createTeacher(id, f_name, l_name, spec="Computer Engineering"):
     user.save()
     teacher = Teacher.objects.create(user=user, teacherID=id, specialization=spec)
     print(teacher)
+
+
+def fillPracs(div_name, end1, end2, end3):
+    yearname, division = div_name.split("_")
+    year = Div.yearnameToYear(yearname)
+
+    if date.today().month < 6:
+        semester = year * 2
+    elif date.today().month > 6:
+        semester = year * 2 - 1
+
+    div = Div.objects.get(semester=semester, calendar_year=date.today().year, division=division)
+    p1 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+                            division=division + "1")
+    p2 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+                            division=division + "2")
+    p3 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+                            division=division + "3")
+    p4 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+                            division=division + "4")
+
+    students = Student.objects.filter(div=div)
+    for student in students:
+        if student.sapID <= end1:
+            StudentDivision.objects.create(student=student, division=p1)
+        elif student.sapID <= end2:
+            StudentDivision.objects.create(student=student, division=p2)
+        elif student.sapID <= end3:
+            StudentDivision.objects.create(student=student, division=p3)
+        else:
+            StudentDivision.objects.create(student=student, division=p4)
