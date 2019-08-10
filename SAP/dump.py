@@ -31,7 +31,7 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=N
         div = Div.objects.create(semester=semester, calendar_year=date.today().year, division=division)
         if classteacher:
             names = classteacher.strip().split(' ')
-            div.classteacher = Teacher.objects.get(first_name=names[0], last_name=names[1])
+            div.classteacher = Teacher.objects.get(user=AppUser.objects.get(first_name=names[0], last_name=names[1]))
             div.save()
 
     with open(path, 'r') as csvFile:
