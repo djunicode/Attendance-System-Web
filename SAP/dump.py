@@ -120,7 +120,7 @@ def WorkLoadDump(path, semester=current_sem):
                     try:
                         users.append(AppUser.objects.get(first_name=name[0], last_name=name[-1]))
                     except AppUser.DoesNotExist:
-                        print(name[0] + " " + name[1] + " not found")
+                        print("\033[91m {}\033[00m" .format(name[0] + " " + name[1] + " not found"))
 
                 teachers = Teacher.objects.filter(user__in=users)
                 for teacher in teachers:
