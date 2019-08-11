@@ -120,7 +120,7 @@ def WorkLoadDump(path, semester=current_sem):
                     try:
                         users.append(AppUser.objects.get(first_name=name[0], last_name=name[-1]))
                     except AppUser.DoesNotExist:
-                        print("\033[91m {}\033[00m" .format(name[0] + " " + name[1] + " not found"))
+                        print("\033[91m{}\033[00m" .format(name[0] + " " + name[1] + " not found"))
 
                 teachers = Teacher.objects.filter(user__in=users)
                 for teacher in teachers:
@@ -169,3 +169,26 @@ def fillPracs(div_name, end1, end2, end3):
             print(StudentDivision.objects.create(student=student, division=p3))
         else:
             print(StudentDivision.objects.create(student=student, division=p4))
+
+# TO RUN THIS SCRIPT -
+#
+# python manage.py shell
+#
+# from SAP import dump
+#
+# AVAILABLE FUNCTIONS USAGE EXAMPLES -
+# reads names in format "FirstName MiddleName LastName", classteacher is left Null and doesn't overwrite old entries
+# dump.SAPDump("SAP/TEA.csv", "TE_A")
+#
+# reads names in format "LastName FirstName MiddleName", classteacher is Sindhu Nair and will overwrite old
+# conflicting entries
+# dump.SAPDump("SAP/TEA.csv", "TE_A", overwrite=True, reverse_names=True, classteacher="Sindhu Nair")
+#
+# populates current semester (odd for june to dec and even for jan to may) with teacher workload data
+# dump.WorkLoadDump("SAP/WorkLoad.csv")
+#
+# creates a teacher with id and username 19210161, first name Pranit and last name Bari
+# dump.createTeacher(19210161, "Pranit", "Bari")
+#
+# creates 4 practical batches, "TE_A1" upto 20, "TE_A2" upto 41, "TE_A3" upto 59 and "TE_A4" for remaining
+# dump.fillPracs("TE_A", 60004170020, 60004170041, 60004170059)
