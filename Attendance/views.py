@@ -733,7 +733,7 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         paragraph_format.space_before = 0
         paragraph_format.space_after = 2
 
-        document.add_picture('SAP/header.png', width=Inches(6))
+        document.add_picture('./SAP/header.png', width=Inches(6))
         last_paragraph = document.paragraphs[-1]
         last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
