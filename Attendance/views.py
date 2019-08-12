@@ -17,6 +17,10 @@ from .serializers import (TeacherSerializer, StudentSerializer, LectureSerialize
 from rest_framework.authentication import TokenAuthentication
 import datetime
 import csv
+from docx import Document
+from docx.shared import Inches, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
+from docx.enum.table import WD_TABLE_ALIGNMENT
 
 
 class HomePage(TemplateView):
@@ -720,19 +724,91 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
                     student_row.append('A')
             attendance_sheet.append(student_row)
 
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'blob; filename="AttendanceData.csv"'
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        response['Content-Disposition'] = 'blob; filename="WeeklyAttendance.docx"'
 
-        csvwriter = csv.writer(response)
+        document = Document()
 
-        header_row = ["SAP ID", "Name"]
+        paragraph_format = document.styles['Normal'].paragraph_format
+        paragraph_format.space_before = 0
+        paragraph_format.space_after = 2
 
+        document.add_picture('SAP/header.png', width=Inches(6))
+        last_paragraph = document.paragraphs[-1]
+        last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        digits = div.calendar_year % 100
+        if div.semester % 2:
+            academic_year = str(div.calendar_year - 1) + "-" + str(digits)
+        else:
+            academic_year = str(div.calendar_year) + "-" + str(digits + 1)
+
+        p = document.add_paragraph('Academic Year: ' + academic_year)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        p = document.add_paragraph('Weekly Report of Attendance Record of Lectures')
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        table = document.add_table(rows=5, cols=4)
+        table.style = 'Table Grid'
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        table.cell(0, 0).text = "Week No.:"
+        table.cell(0, 1).text = "Date:"
+        table.cell(0, 2).text = "From:"
+        table.cell(0, 3).text = "To:"
+        table.cell(1, 0).merge(table.cell(1, 1)).text = "Teacher: " + str(teacher)
+        table.cell(1, 2).merge(table.cell(1, 3)).text = "Subject: " + subject.name
+        table.cell(2, 0).text = "Class: " + yearname
+        table.cell(2, 1).text = "Course/Branch: Computer"
+        table.cell(2, 2).text = "Semester: " + str(semester)
+        table.cell(2, 3).text = "Division: " + str(division)
+        table.cell(3, 0).merge(table.cell(3, 1)).text = "No. of Lectures Scheduled (S):"
+        table.cell(3, 2).merge(table.cell(3, 3)).text = "No. of Lectures Conducted (C):"
+        table.cell(4, 0).merge(table.cell(4, 3)).text = "Remark (In case S ≠ C):"
+
+        p = document.add_paragraph('')
+
+        if(len(lecs) > 4):
+            cols = 3 + len(lecs)
+        else:
+            cols = 7
+
+        table = document.add_table(rows=3 + len(attendance_sheet), cols=cols)
+        table.style = 'Table Grid'
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        p = table.cell(0, 0).merge(table.cell(2, 0)).paragraphs[0]
+        p.text = "Sr.No."
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p = table.cell(0, 1).merge(table.cell(2, 1)).paragraphs[0]
+        p.text = "SAP ID"
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p = table.cell(0, 2).merge(table.cell(2, 2)).paragraphs[0]
+        p.text = "Name"
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        if(len(lecs) > 4):
+            p = table.cell(0, 3).merge(table.cell(0, 2 + len(lecs))).paragraphs[0]
+        else:
+            p = table.cell(0, 3).merge(table.cell(0, 6)).paragraphs[0]
+
+        p.text = "Date & Time"
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        col_no = 3
         for lec in lecs:
-            header_row.append(lec.getDateTimeString())
+            table.cell(1, col_no).text = "date"
+            table.cell(2, col_no).text = "time"
+            col_no += 1
 
-        csvwriter.writerow(header_row)
+        row_no = 3
         for row in attendance_sheet:
-            csvwriter.writerow(row)
+            table.cell(row_no, 0).text = str(row_no - 3)
+            col_no = 1
+            for val in row:
+                table.cell(row_no, col_no).text = str(val)
+                col_no += 1
+            row_no += 1
+
+        document.save(response)
 
         return response
 
