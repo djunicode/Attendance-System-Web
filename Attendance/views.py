@@ -771,7 +771,7 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         saturday = date + datetime.timedelta(days=-date.weekday() + 5)
 
         table.cell(0, 0).text = "Week No.:"
-        table.cell(0, 1).text = "Date:"
+        table.cell(0, 1).text = "Date: " + date.strftime("%d-%m-%Y")
         table.cell(0, 2).text = "From: " + monday.strftime("%d-%m-%Y")
         table.cell(0, 3).text = "To:" + saturday.strftime("%d-%m-%Y")
         table.cell(1, 0).merge(table.cell(1, 1)).text = "Teacher: " + str(teacher)
