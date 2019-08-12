@@ -752,7 +752,7 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
         digits = div.calendar_year % 100
-        if div.semester % 2:
+        if div.semester % 2 == 0:
             academic_year = str(div.calendar_year - 1) + "-" + str(digits)
         else:
             academic_year = str(div.calendar_year) + "-" + str(digits + 1)
@@ -835,7 +835,7 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
 
         row_no = 3
         for row in attendance_sheet:
-            table.cell(row_no, 0).text = str(row_no - 3)
+            table.cell(row_no, 0).text = str(row_no - 2)
             col_no = 1
             for val in row:
                 table.cell(row_no, col_no).text = str(val)
