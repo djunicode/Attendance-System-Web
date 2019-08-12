@@ -767,10 +767,13 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         table.style = 'Table Grid'
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
+        monday = date + datetime.timedelta(days=-date.weekday())
+        saturday = date + datetime.timedelta(days=-date.weekday() + 5)
+
         table.cell(0, 0).text = "Week No.:"
         table.cell(0, 1).text = "Date:"
-        table.cell(0, 2).text = "From:"
-        table.cell(0, 3).text = "To:"
+        table.cell(0, 2).text = "From: " + monday.strftime("%d-%m-%Y")
+        table.cell(0, 3).text = "To:" + saturday.strftime("%d-%m-%Y")
         table.cell(1, 0).merge(table.cell(1, 1)).text = "Teacher: " + str(teacher)
         table.cell(1, 2).merge(table.cell(1, 3)).text = "Subject: " + subject.name
         table.cell(2, 0).text = "Class: " + yearname
