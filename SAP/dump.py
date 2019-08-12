@@ -110,11 +110,8 @@ def WorkLoadDump(path, semester=current_sem):
                 else:
                     sem = year * 2 - 1
                 subject, _ = Subject.objects.get_or_create(name=sub, semester=sem)
-                divs = Div.objects.filter(
-                    division__in=div_names,
-                    semester=sem,
-                    calendar_year=current_year
-                )
+                all_divs = Div.objects.filter(semester=sem, calendar_year=current_year)
+                divs = all_divs.filter(division__in=div_names)
                 users = []
                 for name in teacher_names:
                     try:
@@ -125,8 +122,13 @@ def WorkLoadDump(path, semester=current_sem):
                 teachers = Teacher.objects.filter(user__in=users)
                 for teacher in teachers:
                     for div in divs:
-                        SubjectTeacher.objects.get_or_create(subject=subject, div=div, teacher=teacher)
-                        print(subject, div, teacher)
+                        if not all_divs.filter(division=div.division + sub).exists():
+                            SubjectTeacher.objects.get_or_create(subject=subject, div=div, teacher=teacher)
+                            print(subject, div, teacher)
+                        else:
+                            elective_div = all_divs.get(division=div.division + sub)
+                            SubjectTeacher.objects.get_or_create(subject=subject, div=elective_div, teacher=teacher)
+                            print(subject, elective_div, teacher)
 
 
 def createTeacher(id, f_name, l_name, spec="Computer Engineering"):
