@@ -98,7 +98,7 @@ class Lecture(models.Model):
         return self.startTime.strftime("%H:%M:%S") + " - " + self.endTime.strftime("%H:%M:%S")
 
     def getShortTimeString(self):
-        return self.startTime.strftime("%H:%M") + "-" + self.endTime.strftime("%H:%M")
+        return self.startTime.strftime("%-I:%M") + "-" + self.endTime.strftime("%-I:%M")
 
     def getDateTimeString(self):
         return self.date.strftime("%d-%m-%Y") + " : " + self.getTimeString()

@@ -716,7 +716,7 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         attendance_sheet = []
 
         for student in student_list:
-            student_row = [student.sapID, str(student)]
+            student_row = [student.sapID, str(student).upper()]
             for lec in lecs:
                 if student_lectures.filter(lecture=lec, student=student).exists():
                     student_row.append('P')
@@ -739,8 +739,15 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         paragraph_format = document.styles['Normal'].paragraph_format
         paragraph_format.space_before = 0
         paragraph_format.space_after = 2
+        style = document.styles['Table Grid']
+        font = style.font
+        font.name = 'Cambria'
+        font.size = Pt(11)
 
-        document.add_picture('/home/wizdem/Attendance-System-Web/SAP/header.png', width=Inches(6))
+        try:
+            document.add_picture('/home/wizdem/Attendance-System-Web/SAP/header.png', width=Inches(6))
+        except FileNotFoundError:
+            document.add_picture('SAP/header.png', width=Inches(6))
         last_paragraph = document.paragraphs[-1]
         last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
@@ -759,6 +766,7 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         table = document.add_table(rows=5, cols=4)
         table.style = 'Table Grid'
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
         table.cell(0, 0).text = "Week No.:"
         table.cell(0, 1).text = "Date:"
         table.cell(0, 2).text = "From:"
@@ -775,14 +783,33 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
 
         p = document.add_paragraph('')
 
-        if(len(lecs) > 4):
+        if(len(lecs) > 6):
             cols = 3 + len(lecs)
         else:
-            cols = 7
+            cols = 9
 
         table = document.add_table(rows=3 + len(attendance_sheet), cols=cols)
         table.style = 'Table Grid'
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        table.autofit = True
+
+        for col in table.columns:
+            col.width = Inches(0.6)
+            for cell in col.cells:
+                cell.width = Inches(0.6)
+        col = table.columns[0]
+        col.width = Inches(0.4)
+        for cell in col.cells:
+            cell.width = Inches(0.4)
+        col = table.columns[1]
+        col.width = Inches(1.1)
+        for cell in col.cells:
+            cell.width = Inches(1.1)
+        col = table.columns[2]
+        col.width = Inches(2)
+        for cell in col.cells:
+            cell.width = Inches(2)
+
         p = table.cell(0, 0).merge(table.cell(2, 0)).paragraphs[0]
         p.text = "Sr.No."
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -792,17 +819,17 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         p = table.cell(0, 2).merge(table.cell(2, 2)).paragraphs[0]
         p.text = "Name"
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        if(len(lecs) > 4):
+        if(len(lecs) > 6):
             p = table.cell(0, 3).merge(table.cell(0, 2 + len(lecs))).paragraphs[0]
         else:
-            p = table.cell(0, 3).merge(table.cell(0, 6)).paragraphs[0]
+            p = table.cell(0, 3).merge(table.cell(0, 8)).paragraphs[0]
 
         p.text = "Date & Time"
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
         col_no = 3
         for lec in lecs:
-            table.cell(1, col_no).text = str(lec.date.strftime("%d-%m-%y"))
+            table.cell(1, col_no).text = str(lec.date.strftime("%d/%m"))
             table.cell(2, col_no).text = str(lec.getShortTimeString())
             col_no += 1
 
