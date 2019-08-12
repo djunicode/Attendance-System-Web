@@ -729,11 +729,18 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
 
         document = Document()
 
+        sections = document.sections
+        for section in sections:
+            section.top_margin = Inches(1)
+            section.bottom_margin = Inches(1)
+            section.left_margin = Inches(0.5)
+            section.right_margin = Inches(0.5)
+
         paragraph_format = document.styles['Normal'].paragraph_format
         paragraph_format.space_before = 0
         paragraph_format.space_after = 2
 
-        document.add_picture('./SAP/header.png', width=Inches(6))
+        document.add_picture('/home/wizdem/Attendance-System-Web/SAP/header.png', width=Inches(6))
         last_paragraph = document.paragraphs[-1]
         last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
@@ -795,8 +802,8 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
 
         col_no = 3
         for lec in lecs:
-            table.cell(1, col_no).text = "date"
-            table.cell(2, col_no).text = "time"
+            table.cell(1, col_no).text = str(lec.date.strftime("%d-%m-%y"))
+            table.cell(2, col_no).text = str(lec.getShortTimeString())
             col_no += 1
 
         row_no = 3
