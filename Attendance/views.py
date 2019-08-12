@@ -776,7 +776,7 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         table.cell(2, 0).text = "Class: " + yearname
         table.cell(2, 1).text = "Course/Branch: Computer"
         table.cell(2, 2).text = "Semester: " + str(semester)
-        table.cell(2, 3).text = "Division: " + str(division)
+        table.cell(2, 3).text = "Division: " + division[0]
         table.cell(3, 0).merge(table.cell(3, 1)).text = "No. of Lectures Scheduled (S):"
         table.cell(3, 2).merge(table.cell(3, 3)).text = "No. of Lectures Conducted (C):"
         table.cell(4, 0).merge(table.cell(4, 3)).text = "Remark (In case S ≠ C):"
