@@ -27,7 +27,7 @@ urlpatterns = [
     path('edit-attendance-of-day/<str:subject>/<str:div>/<str:date>',
          views.EditAttendanceOfDay.as_view(), name='edit-attendance'),
     path('get_csv/<str:subject>/<str:div>/<str:date_from>/<str:date_to>', views.DownloadCsv.as_view(), name='get-csv'),
-    path('download-weeks-attendance/<str:subject>/<str:div>/<str:date>', views.DownloadWeeksAttendance.as_view(),
+    path('download-sap-sheet/<str:subject>/<str:div>/<str:date_from>/<str:date_to>', views.DownloadWeeksAttendance.as_view(),
          name='get-weeks-attendance'),
 
     # Android URLs

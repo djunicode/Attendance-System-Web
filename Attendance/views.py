@@ -675,18 +675,29 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         div = kwargs['div']
 
         try:
-            date = kwargs['date']
-            d, m, y = date.split('-')
-            date = datetime.datetime(int(y), int(m), int(d)).date()
+            date_from = kwargs['date_from']
+            d, m, y = date_from.split('-')
+            date_from = datetime.datetime(int(y), int(m), int(d)).date()
         except KeyError:
-            date = datetime.date.today()
+            date_from = datetime.date.today()
+
+        try:
+            date_to = kwargs['date_to']
+            d, m, y = date_to.split('-')
+            date_to = datetime.datetime(int(y), int(m), int(d)).date()
+        except KeyError:
+            date_to = datetime.date.today()
 
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
-        if date.month < 6:
+
+        if date_from.month < 6 and date_to.month < 6:
             semester = year * 2
-        else:
+        elif date_from.month >= 6 and date_to.month >= 6:
             semester = year * 2 - 1
+        else:
+            response_data = {'error_message': "Dates are not from the same semester."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
@@ -701,13 +712,11 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
 
         teacher = Teacher.objects.get(user=request.user)
 
-        current_week = date.isocalendar()[1]
-
         if div.classteacher is teacher:
-            lecs = Lecture.objects.filter(date__week=current_week, div=div, subject=subject,
+            lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, div=div, subject=subject,
                                           attendanceTaken=True).order_by('date')
         else:
-            lecs = Lecture.objects.filter(date__week=current_week, teacher=teacher, div=div,
+            lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, teacher=teacher, div=div,
                                           subject=subject, attendanceTaken=True).order_by('date')
 
         student_list = Student.objects.filter(div=div).order_by('sapID')
@@ -760,20 +769,17 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         p = document.add_paragraph('Academic Year: ' + academic_year)
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-        p = document.add_paragraph('Weekly Report of Attendance Record of Lectures')
+        p = document.add_paragraph('Report of Attendance Record of Lectures')
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
         table = document.add_table(rows=5, cols=4)
         table.style = 'Table Grid'
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-        monday = date + datetime.timedelta(days=-date.weekday())
-        saturday = date + datetime.timedelta(days=-date.weekday() + 5)
-
         table.cell(0, 0).text = "Week No.:"
-        table.cell(0, 1).text = "Date: " + date.strftime("%d-%m-%Y")
-        table.cell(0, 2).text = "From: " + monday.strftime("%d-%m-%Y")
-        table.cell(0, 3).text = "To:" + saturday.strftime("%d-%m-%Y")
+        table.cell(0, 1).text = "Date: "
+        table.cell(0, 2).text = "From: " + date_from.strftime("%d-%m-%Y")
+        table.cell(0, 3).text = "To:" + date_to.strftime("%d-%m-%Y")
         table.cell(1, 0).merge(table.cell(1, 1)).text = "Teacher: " + str(teacher)
         table.cell(1, 2).merge(table.cell(1, 3)).text = "Subject: " + subject.name
         table.cell(2, 0).text = "Class: " + yearname
