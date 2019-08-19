@@ -41,7 +41,7 @@ class SubjectAdmin(admin.ModelAdmin):
 class DivAdmin(admin.ModelAdmin):
     ordering = ['-calendar_year', 'semester', 'division']
     list_display = ['div', 'semester', 'get_class_type']
-    search_fields = ['division',]
+    search_fields = ['division']
 
     def div(self, obj):
         return str(obj)
@@ -69,7 +69,8 @@ class DivAdmin(admin.ModelAdmin):
 class LectureAdmin(admin.ModelAdmin):
     ordering = ['-date', '-endTime']
     list_display = ['lecturestring', 'date']
-    search_fields = ['teacher__user__first_name', 'teacher__user__middle_name', 'teacher__user__last_name', 'subject__name', 'date']
+    search_fields = ['teacher__user__first_name', 'teacher__user__middle_name', 'teacher__user__last_name']
+    search_fields.extend(['subject__name', 'date'])
 
     def lecturestring(self, obj):
         return str(obj)
@@ -93,7 +94,7 @@ class LectureAdmin(admin.ModelAdmin):
             else:
                 queryset |= self.model.objects.filter(div__division__contains=term)
         if filtered:
-            return qset|queryset, use_distinct
+            return qset | queryset, use_distinct
         else:
             return qset, use_distinct
 
@@ -142,15 +143,15 @@ class SubjectTeacherAdmin(admin.ModelAdmin):
             else:
                 queryset |= self.model.objects.filter(div__division__contains=term)
         if filtered:
-            return qset|queryset, use_distinct
+            return qset | queryset, use_distinct
         else:
             return qset, use_distinct
 
 
 class StudentLectureAdmin(admin.ModelAdmin):
     ordering = ['-lecture__date', '-lecture__endTime', 'student__sapID']
-    search_fields = ['lecture__teacher__user__first_name', 'lecture__teacher__user__middle_name', 'lecture__teacher__user__last_name']
-    search_fields.extend(['lecture__subject__name', 'lecture__date'])
+    search_fields = ['lecture__teacher__user__first_name', 'lecture__teacher__user__middle_name']
+    search_fields.extend(['lecture__subject__name', 'lecture__date', 'lecture__teacher__user__last_name'])
     search_fields.extend(['student__user__first_name', 'student__user__middle_name', 'student__user__last_name'])
 
     def get_search_results(self, request, queryset, search_term):
@@ -172,7 +173,7 @@ class StudentLectureAdmin(admin.ModelAdmin):
             else:
                 queryset |= self.model.objects.filter(lecture__div__division__contains=term)
         if filtered:
-            return qset|queryset, use_distinct
+            return qset | queryset, use_distinct
         else:
             return qset, use_distinct
 
@@ -201,7 +202,7 @@ class StudentDivisionAdmin(admin.ModelAdmin):
             else:
                 queryset |= self.model.objects.filter(division__division__contains=term)
         if filtered:
-            return qset|queryset, use_distinct
+            return qset | queryset, use_distinct
         else:
             return qset, use_distinct
 
