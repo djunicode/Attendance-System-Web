@@ -110,23 +110,25 @@ def WorkLoadDump(path, semester=current_sem):
                 else:
                     sem = year * 2 - 1
                 subject, _ = Subject.objects.get_or_create(name=sub, semester=sem)
-                divs = Div.objects.filter(
-                    division__in=div_names,
-                    semester=sem,
-                    calendar_year=current_year
-                )
+                all_divs = Div.objects.filter(semester=sem, calendar_year=current_year)
+                divs = all_divs.filter(division__in=div_names)
                 users = []
                 for name in teacher_names:
                     try:
                         users.append(AppUser.objects.get(first_name=name[0], last_name=name[-1]))
                     except AppUser.DoesNotExist:
-                        print(name[0] + " " + name[1] + " not found")
+                        print("\033[91m{}\033[00m" .format(name[0] + " " + name[1] + " not found"))
 
                 teachers = Teacher.objects.filter(user__in=users)
                 for teacher in teachers:
                     for div in divs:
-                        SubjectTeacher.objects.get_or_create(subject=subject, div=div, teacher=teacher)
-                        print(subject, div, teacher)
+                        if not all_divs.filter(division=div.division + sub).exists():
+                            SubjectTeacher.objects.get_or_create(subject=subject, div=div, teacher=teacher)
+                            print(subject, div, teacher)
+                        else:
+                            elective_div = all_divs.get(division=div.division + sub)
+                            SubjectTeacher.objects.get_or_create(subject=subject, div=elective_div, teacher=teacher)
+                            print(subject, elective_div, teacher)
 
 
 def createTeacher(id, f_name, l_name, spec="Computer Engineering"):
@@ -150,22 +152,45 @@ def fillPracs(div_name, end1, end2, end3):
         semester = year * 2 - 1
 
     div = Div.objects.get(semester=semester, calendar_year=date.today().year, division=division)
-    p1 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+    p1, _ = Div.objects.get_or_create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
                             division=division + "1")
-    p2 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+    p2, _ = Div.objects.get_or_create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
                             division=division + "2")
-    p3 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+    p3, _ = Div.objects.get_or_create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
                             division=division + "3")
-    p4 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+    p4, _ = Div.objects.get_or_create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
                             division=division + "4")
 
     students = Student.objects.filter(div=div)
     for student in students:
         if student.sapID <= end1:
-            print(StudentDivision.objects.create(student=student, division=p1))
+            print(StudentDivision.objects.get_or_create(student=student, division=p1)[0])
         elif student.sapID <= end2:
-            print(StudentDivision.objects.create(student=student, division=p2))
+            print(StudentDivision.objects.get_or_create(student=student, division=p2)[0])
         elif student.sapID <= end3:
-            print(StudentDivision.objects.create(student=student, division=p3))
+            print(StudentDivision.objects.get_or_create(student=student, division=p3)[0])
         else:
-            print(StudentDivision.objects.create(student=student, division=p4))
+            print(StudentDivision.objects.get_or_create(student=student, division=p4)[0])
+
+# TO RUN THIS SCRIPT -
+#
+# python manage.py shell
+#
+# from SAP import dump
+#
+# AVAILABLE FUNCTIONS USAGE EXAMPLES -
+# reads names in format "FirstName MiddleName LastName", classteacher is left Null and doesn't overwrite old entries
+# dump.SAPDump("SAP/TEA.csv", "TE_A")
+#
+# reads names in format "LastName FirstName MiddleName", classteacher is Sindhu Nair and will overwrite old
+# conflicting entries
+# dump.SAPDump("SAP/TEA.csv", "TE_A", overwrite=True, reverse_names=True, classteacher="Sindhu Nair")
+#
+# populates current semester (odd for june to dec and even for jan to may) with teacher workload data
+# dump.WorkLoadDump("SAP/WorkLoad.csv")
+#
+# creates a teacher with id and username 19210161, first name Pranit and last name Bari
+# dump.createTeacher(19210161, "Pranit", "Bari")
+#
+# creates 4 practical batches, "TE_A1" upto 20, "TE_A2" upto 41, "TE_A3" upto 59 and "TE_A4" for remaining
+# dump.fillPracs("TE_A", 60004170020, 60004170041, 60004170059)

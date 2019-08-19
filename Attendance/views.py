@@ -17,6 +17,10 @@ from .serializers import (TeacherSerializer, StudentSerializer, LectureSerialize
 from rest_framework.authentication import TokenAuthentication
 import datetime
 import csv
+from docx import Document
+from docx.shared import Inches, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
+from docx.enum.table import WD_TABLE_ALIGNMENT
 
 
 class HomePage(TemplateView):
@@ -662,6 +666,195 @@ class DownloadCsv(generics.GenericAPIView):
 
         return response
 
+
+class DownloadWeeksAttendance(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        subject_name = kwargs['subject']
+        div = kwargs['div']
+
+        try:
+            date_from = kwargs['date_from']
+            d, m, y = date_from.split('-')
+            date_from = datetime.datetime(int(y), int(m), int(d)).date()
+        except KeyError:
+            date_from = datetime.date.today()
+
+        try:
+            date_to = kwargs['date_to']
+            d, m, y = date_to.split('-')
+            date_to = datetime.datetime(int(y), int(m), int(d)).date()
+        except KeyError:
+            date_to = datetime.date.today()
+
+        yearname, division = div.split("_")
+        year = Div.yearnameToYear(yearname)
+
+        if date_from.month < 6 and date_to.month < 6:
+            semester = year * 2
+        elif date_from.month >= 6 and date_to.month >= 6:
+            semester = year * 2 - 1
+        else:
+            response_data = {'error_message': "Dates are not from the same semester."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+
+        except Subject.DoesNotExist:
+            response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Div.DoesNotExist:
+            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        teacher = Teacher.objects.get(user=request.user)
+
+        if div.classteacher is teacher:
+            lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, div=div, subject=subject,
+                                          attendanceTaken=True).order_by('date')
+        else:
+            lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, teacher=teacher, div=div,
+                                          subject=subject, attendanceTaken=True).order_by('date')
+
+        student_list = Student.objects.filter(div=div).order_by('sapID')
+        student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
+
+        attendance_sheet = []
+
+        for student in student_list:
+            student_row = [student.sapID, str(student).upper()]
+            for lec in lecs:
+                if student_lectures.filter(lecture=lec, student=student).exists():
+                    student_row.append('P')
+                else:
+                    student_row.append('A')
+            attendance_sheet.append(student_row)
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        response['Content-Disposition'] = 'blob; filename="WeeklyAttendance.docx"'
+
+        document = Document()
+
+        sections = document.sections
+        for section in sections:
+            section.top_margin = Inches(1)
+            section.bottom_margin = Inches(1)
+            section.left_margin = Inches(0.5)
+            section.right_margin = Inches(0.5)
+
+        paragraph_format = document.styles['Normal'].paragraph_format
+        paragraph_format.space_before = 0
+        paragraph_format.space_after = 2
+        style = document.styles['Table Grid']
+        font = style.font
+        font.name = 'Cambria'
+        font.size = Pt(11)
+
+        try:
+            document.add_picture('/home/wizdem/Attendance-System-Web/SAP/header.png', width=Inches(6))
+        except FileNotFoundError:
+            document.add_picture('SAP/header.png', width=Inches(6))
+        last_paragraph = document.paragraphs[-1]
+        last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        digits = div.calendar_year % 100
+        if div.semester % 2 == 0:
+            academic_year = str(div.calendar_year - 1) + "-" + str(digits)
+        else:
+            academic_year = str(div.calendar_year) + "-" + str(digits + 1)
+
+        p = document.add_paragraph('Academic Year: ' + academic_year)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        p = document.add_paragraph('Report of Attendance Record of Lectures')
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        table = document.add_table(rows=5, cols=4)
+        table.style = 'Table Grid'
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+        table.cell(0, 0).text = "Week No.:"
+        table.cell(0, 1).text = "Date: "
+        table.cell(0, 2).text = "From: " + date_from.strftime("%d-%m-%Y")
+        table.cell(0, 3).text = "To:" + date_to.strftime("%d-%m-%Y")
+        table.cell(1, 0).merge(table.cell(1, 1)).text = "Teacher: " + str(teacher)
+        table.cell(1, 2).merge(table.cell(1, 3)).text = "Subject: " + subject.name
+        table.cell(2, 0).text = "Class: " + yearname
+        table.cell(2, 1).text = "Course/Branch: Computer"
+        table.cell(2, 2).text = "Semester: " + str(semester)
+        table.cell(2, 3).text = "Division: " + division[0]
+        table.cell(3, 0).merge(table.cell(3, 1)).text = "No. of Lectures Scheduled (S):"
+        table.cell(3, 2).merge(table.cell(3, 3)).text = "No. of Lectures Conducted (C):"
+        table.cell(4, 0).merge(table.cell(4, 3)).text = "Remark (In case S ≠ C):"
+
+        p = document.add_paragraph('')
+
+        if(len(lecs) > 6):
+            cols = 3 + len(lecs)
+        else:
+            cols = 9
+
+        table = document.add_table(rows=3 + len(attendance_sheet), cols=cols)
+        table.style = 'Table Grid'
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        table.autofit = True
+
+        for col in table.columns:
+            col.width = Inches(0.6)
+            for cell in col.cells:
+                cell.width = Inches(0.6)
+        col = table.columns[0]
+        col.width = Inches(0.4)
+        for cell in col.cells:
+            cell.width = Inches(0.4)
+        col = table.columns[1]
+        col.width = Inches(1.1)
+        for cell in col.cells:
+            cell.width = Inches(1.1)
+        col = table.columns[2]
+        col.width = Inches(2)
+        for cell in col.cells:
+            cell.width = Inches(2)
+
+        p = table.cell(0, 0).merge(table.cell(2, 0)).paragraphs[0]
+        p.text = "Sr.No."
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p = table.cell(0, 1).merge(table.cell(2, 1)).paragraphs[0]
+        p.text = "SAP ID"
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p = table.cell(0, 2).merge(table.cell(2, 2)).paragraphs[0]
+        p.text = "Name"
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        if(len(lecs) > 6):
+            p = table.cell(0, 3).merge(table.cell(0, 2 + len(lecs))).paragraphs[0]
+        else:
+            p = table.cell(0, 3).merge(table.cell(0, 8)).paragraphs[0]
+
+        p.text = "Date & Time"
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        col_no = 3
+        for lec in lecs:
+            table.cell(1, col_no).text = str(lec.date.strftime("%d/%m"))
+            table.cell(2, col_no).text = str(lec.getShortTimeString())
+            col_no += 1
+
+        row_no = 3
+        for row in attendance_sheet:
+            table.cell(row_no, 0).text = str(row_no - 2)
+            col_no = 1
+            for val in row:
+                table.cell(row_no, col_no).text = str(val)
+                col_no += 1
+            row_no += 1
+
+        document.save(response)
+
+        return response
+
 # Android EndPoint Views
 
 
@@ -799,7 +992,7 @@ class GetStudentListOfLecture(generics.GenericAPIView):
             response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        students = Student.objects.filter(div=div)
+        students = Student.objects.filter(div=div).order_by('sapID')
         students_json = StudentSerializer(students, many=True).data
 
         teacher = Teacher.objects.get(user=request.user)
@@ -853,6 +1046,9 @@ class SaveAttendance(generics.GenericAPIView):
 
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
+
+        teacher = Teacher.objects.get(user=request.user)
+
         if datetime.date.today().month < 6:
             semester = year * 2
         else:
@@ -860,7 +1056,7 @@ class SaveAttendance(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            SubjectTeacher.objects.get(div=div, subject=subject)
+            SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -1065,6 +1261,9 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
 
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
+
+        teacher = Teacher.objects.get(user=request.user)
+
         if datetime.date.today().month < 6:
             semester = year * 2
         else:
@@ -1072,7 +1271,7 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            SubjectTeacher.objects.get(div=div, subject=subject)
+            SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -1091,11 +1290,9 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
             response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        except Exception:
-            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
+        except Exception as e:
+            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss", 'e': str(e)}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        teacher = Teacher.objects.get(user=request.user)
 
         lecture, _ = Lecture.objects.get_or_create(
             roomNumber=roomNumber,
@@ -1151,6 +1348,8 @@ class DeleteLecture(generics.GenericAPIView):
             endTime = escape(request.POST.get('endTime'))
             lecture_date = escape(request.POST.get('number', datetime.date.today()))
 
+        teacher = Teacher.objects.get(user=request.user)
+
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
         if datetime.date.today().month < 6:
@@ -1160,7 +1359,7 @@ class DeleteLecture(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            SubjectTeacher.objects.get(div=div, subject=subject)
+            SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -1183,8 +1382,6 @@ class DeleteLecture(generics.GenericAPIView):
         except Exception:
             response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        teacher = Teacher.objects.get(user=request.user)
 
         try:
             lecture = Lecture.objects.get(
