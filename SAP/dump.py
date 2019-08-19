@@ -152,25 +152,25 @@ def fillPracs(div_name, end1, end2, end3):
         semester = year * 2 - 1
 
     div = Div.objects.get(semester=semester, calendar_year=date.today().year, division=division)
-    p1 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+    p1, _ = Div.objects.get_or_create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
                             division=division + "1")
-    p2 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+    p2, _ = Div.objects.get_or_create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
                             division=division + "2")
-    p3 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+    p3, _ = Div.objects.get_or_create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
                             division=division + "3")
-    p4 = Div.objects.create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+    p4, _ = Div.objects.get_or_create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
                             division=division + "4")
 
     students = Student.objects.filter(div=div)
     for student in students:
         if student.sapID <= end1:
-            print(StudentDivision.objects.create(student=student, division=p1))
+            print(StudentDivision.objects.get_or_create(student=student, division=p1)[0])
         elif student.sapID <= end2:
-            print(StudentDivision.objects.create(student=student, division=p2))
+            print(StudentDivision.objects.get_or_create(student=student, division=p2)[0])
         elif student.sapID <= end3:
-            print(StudentDivision.objects.create(student=student, division=p3))
+            print(StudentDivision.objects.get_or_create(student=student, division=p3)[0])
         else:
-            print(StudentDivision.objects.create(student=student, division=p4))
+            print(StudentDivision.objects.get_or_create(student=student, division=p4)[0])
 
 # TO RUN THIS SCRIPT -
 #

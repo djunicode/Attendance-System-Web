@@ -992,7 +992,7 @@ class GetStudentListOfLecture(generics.GenericAPIView):
             response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        students = Student.objects.filter(div=div)
+        students = Student.objects.filter(div=div).order_by('sapID')
         students_json = StudentSerializer(students, many=True).data
 
         teacher = Teacher.objects.get(user=request.user)
@@ -1046,6 +1046,9 @@ class SaveAttendance(generics.GenericAPIView):
 
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
+
+        teacher = Teacher.objects.get(user=request.user)
+
         if datetime.date.today().month < 6:
             semester = year * 2
         else:
@@ -1053,7 +1056,7 @@ class SaveAttendance(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            SubjectTeacher.objects.get(div=div, subject=subject)
+            SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -1258,6 +1261,9 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
 
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
+
+        teacher = Teacher.objects.get(user=request.user)
+
         if datetime.date.today().month < 6:
             semester = year * 2
         else:
@@ -1265,7 +1271,7 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            SubjectTeacher.objects.get(div=div, subject=subject)
+            SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -1284,11 +1290,9 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
             response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        except Exception:
-            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
+        except Exception as e:
+            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss", 'e': str(e)}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        teacher = Teacher.objects.get(user=request.user)
 
         lecture, _ = Lecture.objects.get_or_create(
             roomNumber=roomNumber,
@@ -1344,6 +1348,8 @@ class DeleteLecture(generics.GenericAPIView):
             endTime = escape(request.POST.get('endTime'))
             lecture_date = escape(request.POST.get('number', datetime.date.today()))
 
+        teacher = Teacher.objects.get(user=request.user)
+
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
         if datetime.date.today().month < 6:
@@ -1353,7 +1359,7 @@ class DeleteLecture(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            SubjectTeacher.objects.get(div=div, subject=subject)
+            SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
             h, m, s = startTime.split(':')
             startTime = datetime.time(int(h), int(m), int(s))
             h, m, s = endTime.split(':')
@@ -1376,8 +1382,6 @@ class DeleteLecture(generics.GenericAPIView):
         except Exception:
             response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
-
-        teacher = Teacher.objects.get(user=request.user)
 
         try:
             lecture = Lecture.objects.get(
