@@ -633,7 +633,7 @@ class DownloadCsv(generics.GenericAPIView):
             count = self.multiple_lectures(lec)
             total += count
 
-        student_list = Student.objects.filter(div=div)
+        student_list = Student.objects.filter(div=div).order_by('sapID')
         student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
         attendance_list = []
         for student in student_list:
@@ -1089,7 +1089,7 @@ class SaveAttendance(generics.GenericAPIView):
             subject=subject
         )
 
-        student_objects = Student.objects.filter(sapID__in=[int(student['sapID']) for student in students])
+        student_objects = Student.objects.filter(sapID__in=[int(student['sapID']) for student in students]).order_by('sapID')
 
         for student in students:
             student_object = student_objects.get(sapID=int(student['sapID']))
@@ -1304,7 +1304,7 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
             subject=subject
         )
 
-        students = Student.objects.filter(div=div)
+        students = Student.objects.filter(div=div).order_by('sapID')
         students_json = StudentSerializer(students, many=True).data
 
         for student in students_json:
@@ -1457,7 +1457,7 @@ class GetPreviousLectureAttendance(generics.GenericAPIView):
             response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        students = Student.objects.filter(div=div)
+        students = Student.objects.filter(div=div).order_by('sapID')
         students_json = StudentSerializer(students, many=True).data
 
         try:
