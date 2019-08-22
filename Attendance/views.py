@@ -596,6 +596,8 @@ class DownloadCsv(generics.GenericAPIView):
         except KeyError:
             date_to = datetime.date.today()
 
+        teacher = Teacher.objects.get(user=request.user)
+
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
 
@@ -610,6 +612,7 @@ class DownloadCsv(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+            SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -619,14 +622,12 @@ class DownloadCsv(generics.GenericAPIView):
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        teacher = Teacher.objects.get(user=request.user)
+        except SubjectTeacher.DoesNotExist:
+            response_data = {'error_message': "You do not have access to " + subject_name + " for " + div + " data."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        if div.classteacher is teacher:
-            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject,
-                                          attendanceTaken=True)
-        else:
-            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, teacher=teacher,
-                                          div=div, subject=subject, attendanceTaken=True)
+        lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject,
+                                      attendanceTaken=True)
 
         total = 0
         for lec in lecs:
@@ -667,7 +668,7 @@ class DownloadCsv(generics.GenericAPIView):
         return response
 
 
-class DownloadWeeksAttendance(generics.GenericAPIView):
+class DownloadSAPSheet(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -688,6 +689,8 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         except KeyError:
             date_to = datetime.date.today()
 
+        teacher = Teacher.objects.get(user=request.user)
+
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
 
@@ -701,6 +704,7 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+            SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -710,14 +714,12 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        teacher = Teacher.objects.get(user=request.user)
+        except SubjectTeacher.DoesNotExist:
+            response_data = {'error_message': "You do not have access to " + subject_name + " for " + div + " data."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        if div.classteacher is teacher:
-            lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, div=div, subject=subject,
-                                          attendanceTaken=True).order_by('date')
-        else:
-            lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, teacher=teacher, div=div,
-                                          subject=subject, attendanceTaken=True).order_by('date')
+        lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, div=div, subject=subject,
+                                      attendanceTaken=True).order_by('date')
 
         student_list = Student.objects.filter(div=div).order_by('sapID')
         student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
