@@ -17,10 +17,6 @@ from .serializers import (TeacherSerializer, StudentSerializer, LectureSerialize
 from rest_framework.authentication import TokenAuthentication
 import datetime
 import csv
-from docx import Document
-from docx.shared import Inches, Pt
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
-from docx.enum.table import WD_TABLE_ALIGNMENT
 
 
 class HomePage(TemplateView):
@@ -718,21 +714,39 @@ class DownloadSAPSheet(generics.GenericAPIView):
             response_data = {'error_message': "You do not have access to " + subject_name + " for " + div + " data."}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, div=div, subject=subject,
-                                      attendanceTaken=True).order_by('date')
+        from docx import Document
+        from docx.shared import Inches, Pt
+        from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
+        from docx.enum.table import WD_TABLE_ALIGNMENT
+        from docx.enum.section import WD_SECTION
+        from docx.oxml.ns import qn
+
+        is_practical = div.get_class_type() == "Practical"
+
+        if is_practical:
+            divs = Div.objects.filter(
+                division__contains=div.division[0],
+                division__regex=r'[A,B][1-4]',
+                semester=semester,
+                calendar_year=datetime.date.today().year
+            )
+
+            lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, div__in=divs, subject=subject,
+                                          attendanceTaken=True).order_by('date')
 
         student_list = Student.objects.filter(div=div).order_by('sapID')
         student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
+        student_divs = StudentDivision.objects.filter(division__in=divs, student__in=student_list)
 
         attendance_sheet = []
 
         for student in student_list:
-            student_row = [student.sapID, str(student).upper()]
+            student_row = [student.sapID, str(student).upper()] if not is_practical else [student.sapID]
             for lec in lecs:
                 if student_lectures.filter(lecture=lec, student=student).exists():
                     student_row.append('P')
-                else:
-                    student_row.append('A')
+                elif is_practical and student_divs.filter(student=student, division=lec.div).exists():
+                    student_row.append('Ab')
             attendance_sheet.append(student_row)
 
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
@@ -782,7 +796,7 @@ class DownloadSAPSheet(generics.GenericAPIView):
         table.cell(0, 1).text = "Date: "
         table.cell(0, 2).text = "From: " + date_from.strftime("%d-%m-%Y")
         table.cell(0, 3).text = "To:" + date_to.strftime("%d-%m-%Y")
-        table.cell(1, 0).merge(table.cell(1, 1)).text = "Teacher: " + str(teacher)
+        table.cell(1, 0).merge(table.cell(1, 1)).text = "Teacher: " + (str(teacher) if not is_practical else "")
         table.cell(1, 2).merge(table.cell(1, 3)).text = "Subject: " + subject.name
         table.cell(2, 0).text = "Class: " + yearname
         table.cell(2, 1).text = "Course/Branch: Computer"
@@ -794,64 +808,102 @@ class DownloadSAPSheet(generics.GenericAPIView):
 
         p = document.add_paragraph('')
 
-        if(len(lecs) > 6):
-            cols = 3 + len(lecs)
+        if is_practical:
+            section = document.add_section(WD_SECTION.CONTINUOUS)
+
+            sectPr = section._sectPr
+            cols = sectPr.xpath('./w:cols')[0]
+            cols.set(qn('w:num'), str(len(divs)))
+
+            for i in range(1, 5):
+                prac_div = divs.get(division=division[0] + str(i))
+
+                def filter_list(row):
+                    stu_list = student_list.filter(sapID=row[0])
+                    return student_divs.filter(student=stu_list, division=prac_div).exists()
+
+                prac_list = filter(filter_list, attendance_sheet)
+                lec_list = lecs.filter(div=prac_div)
+
+                table = document.add_table(rows=4, cols=1 + (len(lec_list) if (len(lec_list) > 1) else 1))
+                table.style = 'Table Grid'
+                table.alignment = WD_TABLE_ALIGNMENT.CENTER
+                table.autofit = True
+
+                table.cell(0, 0).merge(table.cell(0, 1)).text = "Batch: " + str(prac_div)
+                table.cell(1, 0).merge(table.cell(3, 0)).text = "SAP ID"
+
+                if len(lec_list) <= 1:
+                    table.cell(1, 1).text = "Date"
+                else:
+                    table.cell(1, 1).merge(table.cell(1, len(lec_list))).text = "Date"
+                for entry in prac_list:
+                    row = table.add_row()
+                    for i, val in enumerate(entry):
+                        row.cells[i].text = val
+
+                if i < 4:
+                    document.add_section(WD_SECTION.NEW_COLUMN)
+
         else:
-            cols = 9
+            if(len(lecs) > 6):
+                cols = 3 + len(lecs)
+            else:
+                cols = 9
 
-        table = document.add_table(rows=3 + len(attendance_sheet), cols=cols)
-        table.style = 'Table Grid'
-        table.alignment = WD_TABLE_ALIGNMENT.CENTER
-        table.autofit = True
+            table = document.add_table(rows=3 + len(attendance_sheet), cols=cols)
+            table.style = 'Table Grid'
+            table.alignment = WD_TABLE_ALIGNMENT.CENTER
+            table.autofit = True
 
-        for col in table.columns:
-            col.width = Inches(0.6)
+            for col in table.columns:
+                col.width = Inches(0.6)
+                for cell in col.cells:
+                    cell.width = Inches(0.6)
+            col = table.columns[0]
+            col.width = Inches(0.4)
             for cell in col.cells:
-                cell.width = Inches(0.6)
-        col = table.columns[0]
-        col.width = Inches(0.4)
-        for cell in col.cells:
-            cell.width = Inches(0.4)
-        col = table.columns[1]
-        col.width = Inches(1.1)
-        for cell in col.cells:
-            cell.width = Inches(1.1)
-        col = table.columns[2]
-        col.width = Inches(2)
-        for cell in col.cells:
-            cell.width = Inches(2)
+                cell.width = Inches(0.4)
+            col = table.columns[1]
+            col.width = Inches(1.1)
+            for cell in col.cells:
+                cell.width = Inches(1.1)
+            col = table.columns[2]
+            col.width = Inches(2)
+            for cell in col.cells:
+                cell.width = Inches(2)
 
-        p = table.cell(0, 0).merge(table.cell(2, 0)).paragraphs[0]
-        p.text = "Sr.No."
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p = table.cell(0, 1).merge(table.cell(2, 1)).paragraphs[0]
-        p.text = "SAP ID"
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p = table.cell(0, 2).merge(table.cell(2, 2)).paragraphs[0]
-        p.text = "Name"
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        if(len(lecs) > 6):
-            p = table.cell(0, 3).merge(table.cell(0, 2 + len(lecs))).paragraphs[0]
-        else:
-            p = table.cell(0, 3).merge(table.cell(0, 8)).paragraphs[0]
+            p = table.cell(0, 0).merge(table.cell(2, 0)).paragraphs[0]
+            p.text = "Sr.No."
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p = table.cell(0, 1).merge(table.cell(2, 1)).paragraphs[0]
+            p.text = "SAP ID"
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p = table.cell(0, 2).merge(table.cell(2, 2)).paragraphs[0]
+            p.text = "Name"
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            if(len(lecs) > 6):
+                p = table.cell(0, 3).merge(table.cell(0, 2 + len(lecs))).paragraphs[0]
+            else:
+                p = table.cell(0, 3).merge(table.cell(0, 8)).paragraphs[0]
 
-        p.text = "Date & Time"
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p.text = "Date & Time"
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-        col_no = 3
-        for lec in lecs:
-            table.cell(1, col_no).text = str(lec.date.strftime("%d/%m"))
-            table.cell(2, col_no).text = str(lec.getShortTimeString())
-            col_no += 1
-
-        row_no = 3
-        for row in attendance_sheet:
-            table.cell(row_no, 0).text = str(row_no - 2)
-            col_no = 1
-            for val in row:
-                table.cell(row_no, col_no).text = str(val)
+            col_no = 3
+            for lec in lecs:
+                table.cell(1, col_no).text = str(lec.date.strftime("%d/%m"))
+                table.cell(2, col_no).text = str(lec.getShortTimeString())
                 col_no += 1
-            row_no += 1
+
+            row_no = 3
+            for row in attendance_sheet:
+                table.cell(row_no, 0).text = str(row_no - 2)
+                col_no = 1
+                for val in row:
+                    table.cell(row_no, col_no).text = str(val)
+                    col_no += 1
+                row_no += 1
 
         document.save(response)
 
@@ -1091,7 +1143,8 @@ class SaveAttendance(generics.GenericAPIView):
             subject=subject
         )
 
-        student_objects = Student.objects.filter(sapID__in=[int(student['sapID']) for student in students]).order_by('sapID')
+        sapIDs = [int(student['sapID']) for student in students]
+        student_objects = Student.objects.filter(sapID__in=sapIDs).order_by('sapID')
 
         for student in students:
             student_object = student_objects.get(sapID=int(student['sapID']))
@@ -1292,8 +1345,8 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
             response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        except Exception as e:
-            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss", 'e': str(e)}
+        except Exception:
+            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         lecture, _ = Lecture.objects.get_or_create(
