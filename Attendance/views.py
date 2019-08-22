@@ -707,11 +707,11 @@ class DownloadSAPSheet(generics.GenericAPIView):
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         except Div.DoesNotExist:
-            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            response_data = {'error_message': "Division " + division + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         except SubjectTeacher.DoesNotExist:
-            response_data = {'error_message': "You do not have access to " + subject_name + " for " + div + " data."}
+            response_data = {'error_message': "You do not have access to " + subject_name + " for " + str(div) + " data."}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         from docx import Document
@@ -734,18 +734,18 @@ class DownloadSAPSheet(generics.GenericAPIView):
             lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, div__in=divs, subject=subject,
                                           attendanceTaken=True).order_by('date')
 
-        student_list = Student.objects.filter(div=div).order_by('sapID')
+        student_list = Student.objects.filter(div__in=divs).order_by('sapID')
         student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
         student_divs = StudentDivision.objects.filter(division__in=divs, student__in=student_list)
 
         attendance_sheet = []
 
         for student in student_list:
-            student_row = [student.sapID, str(student).upper()] if not is_practical else [student.sapID]
+            student_row = [student.sapID, str(student).upper()]
             for lec in lecs:
                 if student_lectures.filter(lecture=lec, student=student).exists():
                     student_row.append('P')
-                elif is_practical and student_divs.filter(student=student, division=lec.div).exists():
+                elif student_divs.filter(student=student, division=lec.div).exists():
                     student_row.append('Ab')
             attendance_sheet.append(student_row)
 
@@ -817,12 +817,13 @@ class DownloadSAPSheet(generics.GenericAPIView):
 
             for i in range(1, 5):
                 prac_div = divs.get(division=division[0] + str(i))
+                prac_list = []
 
-                def filter_list(row):
+                for row in attendance_sheet:
                     stu_list = student_list.filter(sapID=row[0])
-                    return student_divs.filter(student=stu_list, division=prac_div).exists()
+                    if student_divs.filter(student__in=stu_list, division=prac_div).exists():
+                        prac_list.append(row)
 
-                prac_list = filter(filter_list, attendance_sheet)
                 lec_list = lecs.filter(div=prac_div)
 
                 table = document.add_table(rows=4, cols=1 + (len(lec_list) if (len(lec_list) > 1) else 1))
@@ -837,10 +838,18 @@ class DownloadSAPSheet(generics.GenericAPIView):
                     table.cell(1, 1).text = "Date"
                 else:
                     table.cell(1, 1).merge(table.cell(1, len(lec_list))).text = "Date"
+
+                col_no = 1
+                for lec in lecs:
+                    table.cell(2, col_no).text = str(lec.date.strftime("%d/%m"))
+                    table.cell(3, col_no).text = str(lec.getShortTimeString())
+                    col_no += 1
+
                 for entry in prac_list:
                     row = table.add_row()
-                    for i, val in enumerate(entry):
-                        row.cells[i].text = val
+                    row.cells[0].text = str(entry[0])
+                    for i, val in enumerate(entry[2:]):
+                        row.cells[i+1].text = str(val)
 
                 if i < 4:
                     document.add_section(WD_SECTION.NEW_COLUMN)
