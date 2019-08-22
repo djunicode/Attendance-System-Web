@@ -102,7 +102,7 @@ class LectureAdmin(admin.ModelAdmin):
 class StudentAdmin(admin.ModelAdmin):
     ordering = ['-sapID']
     list_display = ['name', 'sapID']
-    autocomplete_fields = ('user__username',)
+    autocomplete_fields = ('user',)
     search_fields = ['user__first_name', 'user__middle_name', 'user__last_name', 'sapID']
 
     def name(self, obj):
@@ -112,7 +112,7 @@ class StudentAdmin(admin.ModelAdmin):
 class TeacherAdmin(admin.ModelAdmin):
     ordering = ['teacherID']
     list_display = ['name', 'teacherID']
-    autocomplete_fields = ('user__username',)
+    autocomplete_fields = ('user',)
     search_fields = ['user__first_name', 'user__middle_name', 'user__last_name', 'teacherID']
 
     def name(self, obj):
