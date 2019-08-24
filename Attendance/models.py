@@ -68,6 +68,18 @@ class Div(models.Model):
         else:
             return "Elective"
 
+    def semester_order(self):
+        if datetime.date.today().month < 6:
+            if self.semester % 2 == 0:
+                return 1
+            else:
+                return 0
+        else:
+            if self.semester % 2 == 0:
+                return 0
+            else:
+                return 1
+
     @staticmethod
     def yearnameToYear(yearname):
         if yearname == "FE":
@@ -92,7 +104,7 @@ class Lecture(models.Model):
     attendanceTaken = models.BooleanField(default=False)
 
     def __str__(self):
-        return str(self.div) + " " + self.getTimeString()
+        return str(self.div) + " " + self.subject.name + " " + self.getShortTimeString()
 
     def getTimeString(self):
         return self.startTime.strftime("%H:%M:%S") + " - " + self.endTime.strftime("%H:%M:%S")

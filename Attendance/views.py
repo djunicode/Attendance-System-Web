@@ -17,10 +17,6 @@ from .serializers import (TeacherSerializer, StudentSerializer, LectureSerialize
 from rest_framework.authentication import TokenAuthentication
 import datetime
 import csv
-from docx import Document
-from docx.shared import Inches, Pt
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
-from docx.enum.table import WD_TABLE_ALIGNMENT
 
 
 class HomePage(TemplateView):
@@ -596,6 +592,8 @@ class DownloadCsv(generics.GenericAPIView):
         except KeyError:
             date_to = datetime.date.today()
 
+        teacher = Teacher.objects.get(user=request.user)
+
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
 
@@ -610,6 +608,7 @@ class DownloadCsv(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+            SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -619,21 +618,19 @@ class DownloadCsv(generics.GenericAPIView):
             response_data = {'error_message': "Division " + div + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        teacher = Teacher.objects.get(user=request.user)
+        except SubjectTeacher.DoesNotExist:
+            response_data = {'error_message': "You do not have access to " + subject_name + " for " + div + " data."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        if div.classteacher is teacher:
-            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject,
-                                          attendanceTaken=True)
-        else:
-            lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, teacher=teacher,
-                                          div=div, subject=subject, attendanceTaken=True)
+        lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject,
+                                      attendanceTaken=True)
 
         total = 0
         for lec in lecs:
             count = self.multiple_lectures(lec)
             total += count
 
-        student_list = Student.objects.filter(div=div)
+        student_list = Student.objects.filter(div=div).order_by('sapID')
         student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
         attendance_list = []
         for student in student_list:
@@ -667,7 +664,7 @@ class DownloadCsv(generics.GenericAPIView):
         return response
 
 
-class DownloadWeeksAttendance(generics.GenericAPIView):
+class DownloadSAPSheet(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -688,6 +685,8 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         except KeyError:
             date_to = datetime.date.today()
 
+        teacher = Teacher.objects.get(user=request.user)
+
         yearname, division = div.split("_")
         year = Div.yearnameToYear(yearname)
 
@@ -701,25 +700,48 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
+            SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         except Div.DoesNotExist:
-            response_data = {'error_message': "Division " + div + " Does Not Exist"}
+            response_data = {'error_message': "Division " + division + " Does Not Exist"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        teacher = Teacher.objects.get(user=request.user)
+        except SubjectTeacher.DoesNotExist:
+            response_data = {'error_message': "You do not have access to " + subject_name + " for " + str(div) + " data."}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        if div.classteacher is teacher:
+        from docx import Document
+        from docx.shared import Inches, Pt
+        from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
+        from docx.enum.table import WD_TABLE_ALIGNMENT
+        from docx.enum.section import WD_SECTION
+        from docx.oxml.ns import qn
+
+        is_practical = div.get_class_type() == "Practical"
+
+        if is_practical:
+            divs = Div.objects.filter(
+                division__contains=div.division[0],
+                division__regex=r'[A,B][1-4]',
+                semester=semester,
+                calendar_year=datetime.date.today().year
+            )
+
+            lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, div__in=divs, subject=subject,
+                                          attendanceTaken=True).order_by('date')
+            student_list = Student.objects.filter(div__in=divs).order_by('sapID')
+            student_divs = StudentDivision.objects.filter(division__in=divs, student__in=student_list)
+
+        else:
             lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, div=div, subject=subject,
                                           attendanceTaken=True).order_by('date')
-        else:
-            lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, teacher=teacher, div=div,
-                                          subject=subject, attendanceTaken=True).order_by('date')
+            student_list = Student.objects.filter(div=div).order_by('sapID')
+            student_divs = StudentDivision.objects.filter(division=div, student__in=student_list)
 
-        student_list = Student.objects.filter(div=div).order_by('sapID')
         student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
 
         attendance_sheet = []
@@ -729,8 +751,8 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
             for lec in lecs:
                 if student_lectures.filter(lecture=lec, student=student).exists():
                     student_row.append('P')
-                else:
-                    student_row.append('A')
+                elif student_divs.filter(student=student, division=lec.div).exists():
+                    student_row.append('Ab')
             attendance_sheet.append(student_row)
 
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
@@ -780,7 +802,7 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
         table.cell(0, 1).text = "Date: "
         table.cell(0, 2).text = "From: " + date_from.strftime("%d-%m-%Y")
         table.cell(0, 3).text = "To:" + date_to.strftime("%d-%m-%Y")
-        table.cell(1, 0).merge(table.cell(1, 1)).text = "Teacher: " + str(teacher)
+        table.cell(1, 0).merge(table.cell(1, 1)).text = "Teacher: " + (str(teacher) if not is_practical else "")
         table.cell(1, 2).merge(table.cell(1, 3)).text = "Subject: " + subject.name
         table.cell(2, 0).text = "Class: " + yearname
         table.cell(2, 1).text = "Course/Branch: Computer"
@@ -792,64 +814,111 @@ class DownloadWeeksAttendance(generics.GenericAPIView):
 
         p = document.add_paragraph('')
 
-        if(len(lecs) > 6):
-            cols = 3 + len(lecs)
+        if is_practical:
+            section = document.add_section(WD_SECTION.CONTINUOUS)
+
+            sectPr = section._sectPr
+            cols = sectPr.xpath('./w:cols')[0]
+            cols.set(qn('w:num'), str(len(divs)))
+
+            for i in range(1, 5):
+                prac_div = divs.get(division=division[0] + str(i))
+                prac_list = []
+
+                for row in attendance_sheet:
+                    stu_list = student_list.filter(sapID=row[0])
+                    if student_divs.filter(student__in=stu_list, division=prac_div).exists():
+                        prac_list.append(row)
+
+                lec_list = lecs.filter(div=prac_div)
+
+                table = document.add_table(rows=4, cols=1 + (len(lec_list) if (len(lec_list) > 1) else 1))
+                table.style = 'Table Grid'
+                table.alignment = WD_TABLE_ALIGNMENT.CENTER
+                table.autofit = True
+
+                table.cell(0, 0).merge(table.cell(0, 1)).text = "Batch: " + str(prac_div)
+                table.cell(1, 0).merge(table.cell(3, 0)).text = "SAP ID"
+
+                if len(lec_list) <= 1:
+                    table.cell(1, 1).text = "Date"
+                else:
+                    table.cell(1, 1).merge(table.cell(1, len(lec_list))).text = "Date"
+
+                col_no = 1
+                for lec in lecs:
+                    table.cell(2, col_no).text = str(lec.date.strftime("%d/%m"))
+                    table.cell(3, col_no).text = str(lec.getShortTimeString())
+                    col_no += 1
+
+                for entry in prac_list:
+                    row = table.add_row()
+                    row.cells[0].text = str(entry[0])
+                    for i, val in enumerate(entry[2:]):
+                        row.cells[i+1].text = str(val)
+
+                if i < 4:
+                    document.add_section(WD_SECTION.NEW_COLUMN)
+
         else:
-            cols = 9
+            if(len(lecs) > 6):
+                cols = 3 + len(lecs)
+            else:
+                cols = 9
 
-        table = document.add_table(rows=3 + len(attendance_sheet), cols=cols)
-        table.style = 'Table Grid'
-        table.alignment = WD_TABLE_ALIGNMENT.CENTER
-        table.autofit = True
+            table = document.add_table(rows=3 + len(attendance_sheet), cols=cols)
+            table.style = 'Table Grid'
+            table.alignment = WD_TABLE_ALIGNMENT.CENTER
+            table.autofit = True
 
-        for col in table.columns:
-            col.width = Inches(0.6)
+            for col in table.columns:
+                col.width = Inches(0.6)
+                for cell in col.cells:
+                    cell.width = Inches(0.6)
+            col = table.columns[0]
+            col.width = Inches(0.4)
             for cell in col.cells:
-                cell.width = Inches(0.6)
-        col = table.columns[0]
-        col.width = Inches(0.4)
-        for cell in col.cells:
-            cell.width = Inches(0.4)
-        col = table.columns[1]
-        col.width = Inches(1.1)
-        for cell in col.cells:
-            cell.width = Inches(1.1)
-        col = table.columns[2]
-        col.width = Inches(2)
-        for cell in col.cells:
-            cell.width = Inches(2)
+                cell.width = Inches(0.4)
+            col = table.columns[1]
+            col.width = Inches(1.1)
+            for cell in col.cells:
+                cell.width = Inches(1.1)
+            col = table.columns[2]
+            col.width = Inches(2)
+            for cell in col.cells:
+                cell.width = Inches(2)
 
-        p = table.cell(0, 0).merge(table.cell(2, 0)).paragraphs[0]
-        p.text = "Sr.No."
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p = table.cell(0, 1).merge(table.cell(2, 1)).paragraphs[0]
-        p.text = "SAP ID"
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p = table.cell(0, 2).merge(table.cell(2, 2)).paragraphs[0]
-        p.text = "Name"
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        if(len(lecs) > 6):
-            p = table.cell(0, 3).merge(table.cell(0, 2 + len(lecs))).paragraphs[0]
-        else:
-            p = table.cell(0, 3).merge(table.cell(0, 8)).paragraphs[0]
+            p = table.cell(0, 0).merge(table.cell(2, 0)).paragraphs[0]
+            p.text = "Sr.No."
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p = table.cell(0, 1).merge(table.cell(2, 1)).paragraphs[0]
+            p.text = "SAP ID"
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p = table.cell(0, 2).merge(table.cell(2, 2)).paragraphs[0]
+            p.text = "Name"
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            if(len(lecs) > 6):
+                p = table.cell(0, 3).merge(table.cell(0, 2 + len(lecs))).paragraphs[0]
+            else:
+                p = table.cell(0, 3).merge(table.cell(0, 8)).paragraphs[0]
 
-        p.text = "Date & Time"
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p.text = "Date & Time"
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-        col_no = 3
-        for lec in lecs:
-            table.cell(1, col_no).text = str(lec.date.strftime("%d/%m"))
-            table.cell(2, col_no).text = str(lec.getShortTimeString())
-            col_no += 1
-
-        row_no = 3
-        for row in attendance_sheet:
-            table.cell(row_no, 0).text = str(row_no - 2)
-            col_no = 1
-            for val in row:
-                table.cell(row_no, col_no).text = str(val)
+            col_no = 3
+            for lec in lecs:
+                table.cell(1, col_no).text = str(lec.date.strftime("%d/%m"))
+                table.cell(2, col_no).text = str(lec.getShortTimeString())
                 col_no += 1
-            row_no += 1
+
+            row_no = 3
+            for row in attendance_sheet:
+                table.cell(row_no, 0).text = str(row_no - 2)
+                col_no = 1
+                for val in row:
+                    table.cell(row_no, col_no).text = str(val)
+                    col_no += 1
+                row_no += 1
 
         document.save(response)
 
@@ -1089,7 +1158,8 @@ class SaveAttendance(generics.GenericAPIView):
             subject=subject
         )
 
-        student_objects = Student.objects.filter(sapID__in=[int(student['sapID']) for student in students])
+        sapIDs = [int(student['sapID']) for student in students]
+        student_objects = Student.objects.filter(sapID__in=sapIDs).order_by('sapID')
 
         for student in students:
             student_object = student_objects.get(sapID=int(student['sapID']))
@@ -1290,8 +1360,8 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
             response_data = {'error_message': "Division " + str(div) + " does not have Subject " + subject_name}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        except Exception as e:
-            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss", 'e': str(e)}
+        except Exception:
+            response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         lecture, _ = Lecture.objects.get_or_create(
@@ -1304,7 +1374,7 @@ class SaveLectureAndGetStudentsList(generics.GenericAPIView):
             subject=subject
         )
 
-        students = Student.objects.filter(div=div)
+        students = Student.objects.filter(div=div).order_by('sapID')
         students_json = StudentSerializer(students, many=True).data
 
         for student in students_json:
@@ -1457,11 +1527,11 @@ class GetPreviousLectureAttendance(generics.GenericAPIView):
             response_data = {'error_message': "Wrong Date and/or Time format. Expecting dd-mm-yy and hh:mm:ss"}
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
-        students = Student.objects.filter(div=div)
+        students = Student.objects.filter(div=div).order_by('sapID')
         students_json = StudentSerializer(students, many=True).data
 
         try:
-            days_lectures = Lecture.objects.filter(div=div, date=lec_date, startTime__lte=startTime)
+            days_lectures = Lecture.objects.filter(div=div, date=lec_date, startTime__lt=startTime)
             lecture = days_lectures.filter(attendanceTaken=True).latest('startTime')
         except Lecture.DoesNotExist:
             response_data = {'error_message': "No previous lectures on this day"}
