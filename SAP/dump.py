@@ -153,13 +153,13 @@ def fillPracs(div_name, end1, end2, end3):
 
     div = Div.objects.get(semester=semester, calendar_year=date.today().year, division=division)
     p1, _ = Div.objects.get_or_create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
-                            division=division + "1")
+                                      division=division + "1")
     p2, _ = Div.objects.get_or_create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
-                            division=division + "2")
+                                      division=division + "2")
     p3, _ = Div.objects.get_or_create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
-                            division=division + "3")
+                                      division=division + "3")
     p4, _ = Div.objects.get_or_create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
-                            division=division + "4")
+                                      division=division + "4")
 
     students = Student.objects.filter(div=div)
     for student in students:
