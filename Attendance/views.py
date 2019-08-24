@@ -711,7 +711,9 @@ class DownloadSAPSheet(generics.GenericAPIView):
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         except SubjectTeacher.DoesNotExist:
-            response_data = {'error_message': "You do not have access to " + subject_name + " for " + str(div) + " data."}
+            response_data = {
+                'error_message': "You do not have access to " + subject_name + " for " + str(div) + " data."
+            }
             return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         from docx import Document
@@ -855,7 +857,7 @@ class DownloadSAPSheet(generics.GenericAPIView):
                     row = table.add_row()
                     row.cells[0].text = str(entry[0])
                     for i, val in enumerate(entry[2:]):
-                        row.cells[i+1].text = str(val)
+                        row.cells[i + 1].text = str(val)
 
                 if i < 4:
                     document.add_section(WD_SECTION.NEW_COLUMN)
