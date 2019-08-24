@@ -733,10 +733,16 @@ class DownloadSAPSheet(generics.GenericAPIView):
 
             lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, div__in=divs, subject=subject,
                                           attendanceTaken=True).order_by('date')
+            student_list = Student.objects.filter(div__in=divs).order_by('sapID')
+            student_divs = StudentDivision.objects.filter(division__in=divs, student__in=student_list)
 
-        student_list = Student.objects.filter(div__in=divs).order_by('sapID')
+        else:
+            lecs = Lecture.objects.filter(date__gte=date_from, date__lte=date_to, div=div, subject=subject,
+                                          attendanceTaken=True).order_by('date')
+            student_list = Student.objects.filter(div=div).order_by('sapID')
+            student_divs = StudentDivision.objects.filter(division=div, student__in=student_list)
+
         student_lectures = StudentLecture.objects.filter(lecture__in=lecs)
-        student_divs = StudentDivision.objects.filter(division__in=divs, student__in=student_list)
 
         attendance_sheet = []
 
