@@ -848,7 +848,7 @@ class DownloadSAPSheet(generics.GenericAPIView):
                     table.cell(1, 1).merge(table.cell(1, len(lec_list))).text = "Date"
 
                 col_no = 1
-                for lec in lecs:
+                for lec in lec_list:
                     table.cell(2, col_no).text = str(lec.date.strftime("%d/%m"))
                     table.cell(3, col_no).text = str(lec.getShortTimeString())
                     col_no += 1
