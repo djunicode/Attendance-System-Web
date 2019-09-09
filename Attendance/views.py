@@ -47,21 +47,6 @@ def dash(request):
     return render(request, 'Attendance/login_success.html')
 
 
-def signup(request):
-    if request.method == 'POST':
-        form = forms.UserCreateForm(request.POST)
-        if form.is_valid():
-            form.save()
-            username = form.cleaned_data.get('username')
-            raw_password = form.cleaned_data.get('password1')
-            user = authenticate(username=username, password=raw_password)
-            login(request, user)
-            return redirect('Attendance:dash')
-    else:
-        form = forms.UserCreateForm()
-    return render(request, 'Attendance/signup.html', {'form': form})
-
-
 # WEB EndPoint Views
 
 
@@ -152,9 +137,12 @@ class LogoutTeacherView(generics.GenericAPIView):
 
 
 class SignUpTeacherView(generics.GenericAPIView):
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            response_data = {'error_message': "You are not authorised to use this endpoint. You aren't a superuser!"}
+            return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             form_data = json.loads(request.body.decode())
