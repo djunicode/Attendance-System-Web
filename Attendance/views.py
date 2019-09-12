@@ -596,7 +596,12 @@ class DownloadCsv(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
+            if div.classteacher.id == teacher.id:
+                if not SubjectTeacher.objects.filter(div=div, subject=subject).exists():
+                    response_data = {'error_message': str(div) + " does not have subject " + subject_name}
+                    return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
@@ -688,7 +693,12 @@ class DownloadSAPSheet(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
+            if div.classteacher.id == teacher.id:
+                if not SubjectTeacher.objects.filter(div=div, subject=subject).exists():
+                    response_data = {'error_message': str(div) + " does not have subject " + subject_name}
+                    return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                SubjectTeacher.objects.get(div=div, subject=subject, teacher=teacher)
 
         except Subject.DoesNotExist:
             response_data = {'error_message': "Subject " + subject_name + " Does Not Exist"}
