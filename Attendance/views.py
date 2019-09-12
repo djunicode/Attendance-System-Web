@@ -253,7 +253,7 @@ class GetAttendanceOfDay(generics.GenericAPIView):
 
         teacher = Teacher.objects.get(user=request.user)
 
-        if div.classteacher is teacher:
+        if div.classteacher.id == teacher.id:
             lecs = Lecture.objects.filter(date=date, div=div, subject=subject, attendanceTaken=True)
         else:
             lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject, attendanceTaken=True)
@@ -345,7 +345,7 @@ class GetAttendanceOfRange(generics.GenericAPIView):
 
         teacher = Teacher.objects.get(user=request.user)
 
-        if div.classteacher is teacher:
+        if div.classteacher.id == teacher.id:
             lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject,
                                           attendanceTaken=True)
         else:
@@ -517,7 +517,7 @@ class EditAttendanceOfDay(generics.GenericAPIView):
 
         teacher = Teacher.objects.get(user=request.user)
 
-        if div.classteacher is teacher:
+        if div.classteacher.id == teacher.id:
             lecs = Lecture.objects.filter(date=date, div=div, subject=subject)
         else:
             lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject)
