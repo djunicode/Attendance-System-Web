@@ -253,7 +253,7 @@ class GetAttendanceOfDay(generics.GenericAPIView):
 
         teacher = Teacher.objects.get(user=request.user)
 
-        if div.classteacher.teacherID == teacher.teacherID:
+        if div.classteacher and div.classteacher.teacherID == teacher.teacherID:
             lecs = Lecture.objects.filter(date=date, div=div, subject=subject, attendanceTaken=True)
         else:
             lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject, attendanceTaken=True)
@@ -345,7 +345,7 @@ class GetAttendanceOfRange(generics.GenericAPIView):
 
         teacher = Teacher.objects.get(user=request.user)
 
-        if div.classteacher.teacherID == teacher.teacherID:
+        if div.classteacher and div.classteacher.teacherID == teacher.teacherID:
             lecs = Lecture.objects.filter(date__lte=date_to, date__gte=date_from, div=div, subject=subject,
                                           attendanceTaken=True)
         else:
@@ -517,7 +517,7 @@ class EditAttendanceOfDay(generics.GenericAPIView):
 
         teacher = Teacher.objects.get(user=request.user)
 
-        if div.classteacher.teacherID == teacher.teacherID:
+        if div.classteacher and div.classteacher.teacherID == teacher.teacherID:
             lecs = Lecture.objects.filter(date=date, div=div, subject=subject)
         else:
             lecs = Lecture.objects.filter(date=date, teacher=teacher, div=div, subject=subject)
@@ -596,7 +596,7 @@ class DownloadCsv(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            if div.classteacher.teacherID == teacher.teacherID:
+            if div.classteacher and div.classteacher.teacherID == teacher.teacherID:
                 if not SubjectTeacher.objects.filter(div=div, subject=subject).exists():
                     response_data = {'error_message': str(div) + " does not have subject " + subject_name}
                     return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
@@ -693,7 +693,7 @@ class DownloadSAPSheet(generics.GenericAPIView):
         try:
             subject = Subject.objects.get(name=subject_name)
             div = Div.objects.get(division=division, semester=semester, calendar_year=datetime.date.today().year)
-            if div.classteacher.teacherID == teacher.teacherID:
+            if div.classteacher and div.classteacher.teacherID == teacher.teacherID:
                 if not SubjectTeacher.objects.filter(div=div, subject=subject).exists():
                     response_data = {'error_message': str(div) + " does not have subject " + subject_name}
                     return JsonResponse(response_data, status=status.HTTP_400_BAD_REQUEST)
