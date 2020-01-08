@@ -13,7 +13,7 @@ else:
     current_sem = "odd"
 
 
-def PromoteDiv(div_name, classteacher=None, old_year=current_year, old_semester=current_sem - 1, with_pracs=False):
+def PromoteDiv(div_name, classteacher=None, old_semester, old_year=current_year, with_pracs=False):
     yearname, division = div_name.split("_")
 
     div_exists = Div.objects.filter(semester=old_semester, calendar_year=old_year, division=division).exists()
@@ -46,7 +46,7 @@ def PromoteDiv(div_name, classteacher=None, old_year=current_year, old_semester=
     print("\033[92m{}\033[00m" .format(div_name + "promoted"))
 
 
-def PromoteAllDivs(old_year=current_year, old_semester=current_sem - 1):
+def PromoteAllDivs(old_semester, old_year=current_year):
     for div in Div.objects.filter(semester=old_semester, calendar_year=old_year):
         PromoteDiv(str(div), old_year=old_year, old_semester=old_semester, with_pracs=False)
 
