@@ -13,7 +13,7 @@ else:
     current_sem = "odd"
 
 
-def PromoteDiv(div_name, classteacher=None, old_semester, old_year=current_year, with_pracs=False):
+def PromoteDiv(div_name, old_semester, classteacher=None, old_year=current_year, with_pracs=False):
     yearname, division = div_name.split("_")
 
     div_exists = Div.objects.filter(semester=old_semester, calendar_year=old_year, division=division).exists()
