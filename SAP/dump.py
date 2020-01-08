@@ -43,7 +43,7 @@ def PromoteDiv(div_name, old_semester, classteacher=None, old_year=current_year,
         else:
             new_div = Div.objects.create(semester=old_semester + 1, calendar_year=old_year + old_semester % 2,
                                          division=division)
-    print("\033[92m{}\033[00m" .format(div_name + "promoted"))
+    print("\033[92m{}\033[00m" .format(div_name + " promoted"))
 
 
 def PromoteAllDivs(old_semester, old_year=current_year):
