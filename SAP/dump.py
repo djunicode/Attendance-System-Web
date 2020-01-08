@@ -13,6 +13,44 @@ else:
     current_sem = "odd"
 
 
+def PromoteDiv(div_name, classteacher=None, old_year=current_year, old_semester=current_sem - 1, with_pracs=False):
+    yearname, division = div_name.split("_")
+
+    div_exists = Div.objects.filter(semester=old_semester, calendar_year=old_year, division=division).exists()
+    if not div_exists:
+        raise Exception("Div not Found")
+
+    if with_pracs:
+        for div in Div.objects.filter(semester=old_semester, calendar_year=old_year, division_startswith=division):
+            if classteacher:
+                names = classteacher.strip().split(' ')
+                teacher = Teacher.objects.get(user=AppUser.objects.get(first_name=names[0], last_name=names[1]))
+                new_div = Div.objects.create(semester=old_semester + 1, calendar_year=old_year + old_semester % 2,
+                                             division=div.division, classteacher=teacher)
+            else:
+                new_div = Div.objects.create(semester=old_semester + 1, calendar_year=old_year + old_semester % 2,
+                                             division=div.division)
+
+            studivs = StudentDivision.objects.filter(division=div)
+            for sd in studivs:
+                StudentDivision.objects.create(student=sd.student, division=new_div)
+    else:
+        if classteacher:
+            names = classteacher.strip().split(' ')
+            teacher = Teacher.objects.get(user=AppUser.objects.get(first_name=names[0], last_name=names[1]))
+            new_div = Div.objects.create(semester=old_semester + 1, calendar_year=old_year + old_semester % 2,
+                                         division=division, classteacher=teacher)
+        else:
+            new_div = Div.objects.create(semester=old_semester + 1, calendar_year=old_year + old_semester % 2,
+                                         division=division)
+    print("\033[92m{}\033[00m" .format(div_name + "promoted"))
+
+
+def PromoteAllDivs(old_year=current_year, old_semester=current_sem - 1):
+    for div in Div.objects.filter(semester=old_semester, calendar_year=old_year):
+        PromoteDiv(str(div), old_year=old_year, old_semester=old_semester, with_pracs=False)
+
+
 def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=None):
     yearname, division = div_name.split("_")
     year = Div.yearnameToYear(yearname)
@@ -22,20 +60,20 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=N
     elif date.today().month > 6:
         semester = year * 2 - 1
 
-    div_exists = Div.objects.filter(semester=semester, calendar_year=date.today().year, division=division).exists()
+    div_exists = Div.objects.filter(semester=semester, calendar_year=current_year, division=division).exists()
     if div_exists and not overwrite:
         raise Exception("Div already exists, set overwrite to True to overwrite")
     elif div_exists:
-        div = Div.objects.get(semester=semester, calendar_year=date.today().year, division=division)
+        div = Div.objects.get(semester=semester, calendar_year=current_year, division=division)
     else:
         if classteacher:
             names = classteacher.strip().split(' ')
             teacher = Teacher.objects.get(user=AppUser.objects.get(first_name=names[0], last_name=names[1]))
-            div = Div.objects.create(semester=semester, calendar_year=date.today().year, division=division)
+            div = Div.objects.create(semester=semester, calendar_year=current_year, division=division)
             div.classteacher = teacher
             div.save()
         else:
-            div = Div.objects.create(semester=semester, calendar_year=date.today().year, division=division)
+            div = Div.objects.create(semester=semester, calendar_year=current_year, division=division)
 
     with open(path, 'r') as csvFile:
         reader = csv.reader(csvFile)
