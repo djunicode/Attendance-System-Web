@@ -43,6 +43,11 @@ def PromoteDiv(div_name, old_semester, classteacher=None, old_year=current_year,
         else:
             new_div = Div.objects.create(semester=old_semester + 1, calendar_year=old_year + old_semester % 2,
                                          division=division)
+        
+        div = Div.objects.get(semester=old_semester, calendar_year=old_year, division=division)
+        studivs = StudentDivision.objects.filter(division=div)
+        for sd in studivs:
+            StudentDivision.objects.create(student=sd.student, division=new_div)
     print("\033[92m{}\033[00m" .format(div_name + " promoted"))
 
 
