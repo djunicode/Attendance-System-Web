@@ -54,7 +54,7 @@ def PromoteDiv(div_name, old_semester, classteacher=None, old_year=current_year,
 
 def PromoteAllDivs(old_semester, old_year=current_year):
     for div in Div.objects.filter(semester=old_semester, calendar_year=old_year):
-        if len(div.division <= 2):
+        if len(div.division) <= 2:
             PromoteDiv(str(div), old_year=old_year, old_semester=old_semester, with_pracs=False)
 
 
