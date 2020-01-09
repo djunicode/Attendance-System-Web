@@ -21,7 +21,8 @@ def PromoteDiv(div_name, old_semester, classteacher=None, old_year=current_year,
         raise Exception("Div not Found")
 
     if with_pracs:
-        for div in Div.objects.filter(semester=old_semester, calendar_year=old_year, division_startswith=division):
+        pracs_and_class = [division, division + "1", division + "2", division + "3", division + "4"]
+        for div in Div.objects.filter(semester=old_semester, calendar_year=old_year, division_in=pracs_and_class):
             if classteacher:
                 names = classteacher.strip().split(' ')
                 teacher = Teacher.objects.get(user=AppUser.objects.get(first_name=names[0], last_name=names[1]))
@@ -53,6 +54,7 @@ def PromoteDiv(div_name, old_semester, classteacher=None, old_year=current_year,
 
 def PromoteAllDivs(old_semester, old_year=current_year):
     for div in Div.objects.filter(semester=old_semester, calendar_year=old_year):
+        if len(div.division <= 2):
         PromoteDiv(str(div), old_year=old_year, old_semester=old_semester, with_pracs=False)
 
 
