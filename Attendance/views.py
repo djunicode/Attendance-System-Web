@@ -776,9 +776,9 @@ class DownloadSAPSheet(generics.GenericAPIView):
         font.size = Pt(11)
 
         try:
-            document.add_picture('/home/wizdem/Attendance-System-Web/SAP/header.png', width=Inches(6))
+            document.add_picture('/home/wizdem/Attendance-System-Web/SAP/autonomous_header.jpeg', width=Inches(6))
         except FileNotFoundError:
-            document.add_picture('SAP/header.png', width=Inches(6))
+            document.add_picture('SAP/autonomous_header.jpeg', width=Inches(6))
         last_paragraph = document.paragraphs[-1]
         last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
 

@@ -13,6 +13,51 @@ else:
     current_sem = "odd"
 
 
+def PromoteDiv(div_name, old_semester, classteacher=None, old_year=current_year, with_pracs=False):
+    yearname, division = div_name.split("_")
+
+    div_exists = Div.objects.filter(semester=old_semester, calendar_year=old_year, division=division).exists()
+    if not div_exists:
+        raise Exception("Div not Found")
+
+    if with_pracs:
+        pracs_and_class = [division, division + "1", division + "2", division + "3", division + "4"]
+        for div in Div.objects.filter(semester=old_semester, calendar_year=old_year, division_in=pracs_and_class):
+            if classteacher:
+                names = classteacher.strip().split(' ')
+                teacher = Teacher.objects.get(user=AppUser.objects.get(first_name=names[0], last_name=names[1]))
+                new_div = Div.objects.create(semester=old_semester + 1, calendar_year=old_year + old_semester % 2,
+                                             division=div.division, classteacher=teacher)
+            else:
+                new_div = Div.objects.create(semester=old_semester + 1, calendar_year=old_year + old_semester % 2,
+                                             division=div.division)
+
+            studivs = StudentDivision.objects.filter(division=div)
+            for sd in studivs:
+                StudentDivision.objects.create(student=sd.student, division=new_div)
+    else:
+        if classteacher:
+            names = classteacher.strip().split(' ')
+            teacher = Teacher.objects.get(user=AppUser.objects.get(first_name=names[0], last_name=names[1]))
+            new_div = Div.objects.create(semester=old_semester + 1, calendar_year=old_year + old_semester % 2,
+                                         division=division, classteacher=teacher)
+        else:
+            new_div = Div.objects.create(semester=old_semester + 1, calendar_year=old_year + old_semester % 2,
+                                         division=division)
+        
+        div = Div.objects.get(semester=old_semester, calendar_year=old_year, division=division)
+        studivs = StudentDivision.objects.filter(division=div)
+        for sd in studivs:
+            StudentDivision.objects.create(student=sd.student, division=new_div)
+    print("\033[92m{}\033[00m" .format(div_name + " promoted"))
+
+
+def PromoteAllDivs(old_semester, old_year=current_year):
+    for div in Div.objects.filter(semester=old_semester, calendar_year=old_year):
+        if len(div.division) <= 2:
+            PromoteDiv(str(div), old_year=old_year, old_semester=old_semester, with_pracs=False)
+
+
 def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=None):
     yearname, division = div_name.split("_")
     year = Div.yearnameToYear(yearname)
@@ -22,20 +67,20 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=N
     elif date.today().month > 6:
         semester = year * 2 - 1
 
-    div_exists = Div.objects.filter(semester=semester, calendar_year=date.today().year, division=division).exists()
+    div_exists = Div.objects.filter(semester=semester, calendar_year=current_year, division=division).exists()
     if div_exists and not overwrite:
         raise Exception("Div already exists, set overwrite to True to overwrite")
     elif div_exists:
-        div = Div.objects.get(semester=semester, calendar_year=date.today().year, division=division)
+        div = Div.objects.get(semester=semester, calendar_year=current_year, division=division)
     else:
         if classteacher:
             names = classteacher.strip().split(' ')
             teacher = Teacher.objects.get(user=AppUser.objects.get(first_name=names[0], last_name=names[1]))
-            div = Div.objects.create(semester=semester, calendar_year=date.today().year, division=division)
+            div = Div.objects.create(semester=semester, calendar_year=current_year, division=division)
             div.classteacher = teacher
             div.save()
         else:
-            div = Div.objects.create(semester=semester, calendar_year=date.today().year, division=division)
+            div = Div.objects.create(semester=semester, calendar_year=current_year, division=division)
 
     with open(path, 'r') as csvFile:
         reader = csv.reader(csvFile)
