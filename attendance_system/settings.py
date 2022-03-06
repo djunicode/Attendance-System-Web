@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+from decouple import config
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,12 +22,12 @@ STATIC_DIR = os.path.join(BASE_DIR, 'Attendance/static')
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'j6f+h$0ejyia5bd3n^b6b031ltb_*v3stcv-h1k(1=#8(xoanh'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config("DEBUG") == "True"
 
-ALLOWED_HOSTS = ['10.120.105.66', 'localhost', 'wizdem.pythonanywhere.com']
+ALLOWED_HOSTS = config("ALLOWED_HOSTS").replace(" ", "").split(",")
 
 
 # Application definition
@@ -59,11 +60,9 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'attendance_system.urls'
 
-CORS_ORIGIN_ALLOW_ALL = True
 
-CORS_ORIGIN_WHITELIST = (
-    '127.0.0.1', '10.120.105.66', 'localhost'
-)
+CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_WHITELIST = config("CORS_ORIGIN_WHITELIST").replace(" ", "").split(",")
 
 CORS_ALLOW_METHODS = (
     'GET',
@@ -108,45 +107,45 @@ WSGI_APPLICATION = 'attendance_system.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
-try:
-    from . import localDBsettings
-    DATABASES = {
-        # create a file attendance_system/localDBsettings.py with the following in it:
-        # default_database = {
-        #     'ENGINE': 'django.db.backends.mysql',
-        #     'NAME': '',
-        #     'USER': '',
-        #     'PASSWORD': '',
-        #     'HOST': 'localhost',
-        #     'PORT': '3306',
-        #     'OPTIONS': {
-        #         'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        #     }
-        # }
-        'default': localDBsettings.default_database,
-    }
-
-except ImportError:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'attendance_system',
-            'USER': 'xyz',
-            'PASSWORD': 'pass@123',
-            'HOST': 'localhost',
-            'PORT': '3306',
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            }
-        },
-    }
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+# try:
+#     from . import localDBsettings
+#     DATABASES = {
+#         # create a file attendance_system/localDBsettings.py with the following in it:
+#         # default_database = {
+#         #     'ENGINE': 'django.db.backends.mysql',
+#         #     'NAME': '',
+#         #     'USER': '',
+#         #     'PASSWORD': '',
+#         #     'HOST': 'localhost',
+#         #     'PORT': '3306',
+#         #     'OPTIONS': {
+#         #         'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+#         #     }
+#         # }
+#         'default': localDBsettings.default_database,
 #     }
-# }
+
+# except ImportError:
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.mysql',
+#             'NAME': 'attendance_system',
+#             'USER': 'xyz',
+#             'PASSWORD': 'pass@123',
+#             'HOST': 'localhost',
+#             'PORT': '3306',
+#             'OPTIONS': {
+#                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+#             }
+#         },
+#     }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+}
 
 
 # Password validation
