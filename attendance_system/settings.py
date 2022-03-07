@@ -202,3 +202,6 @@ LOGOUT_REDIRECT_URL = 'Attendance:thanks'
 LOGIN_URL = 'Attendance:login'
 
 AUTH_USER_MODEL = "Attendance.AppUser"
+
+
+

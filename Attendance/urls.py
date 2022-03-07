@@ -14,7 +14,7 @@ urlpatterns = [
 
     path('login-teacher/', views.LoginTeacherView.as_view(), name='login-teacher'),
     path('logout-teacher/', views.LogoutTeacherView.as_view(), name='logout-teacher'),
-    path('signup-teacher/', views.SignUpTeacherView.as_view(), name='signup-teacher'),
+    path('signup-teacher/', views.SignUpTeacherView.as_view(), name='signup'),
     path('generic-login/', views.GenericLoginView.as_view(), name='generic-login'),
     path('dashboard-teacher/<int:teacherId>', views.TeachersSubjectDataView.as_view(), name='dashboard-teacher'),
     path('get-attendance-of-day/<str:subject>/<str:div>/<str:date>',

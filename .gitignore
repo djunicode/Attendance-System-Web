@@ -106,3 +106,8 @@ venv.bak/
 attendance_system/localDBsettings.py
 
 AttendanceData.csv
+
+db.sqlite3
+
+static/
+media/
