@@ -4,9 +4,10 @@ from .models import SubjectTeacher, StudentLecture, StudentDivision
 from django.contrib.auth.admin import UserAdmin
 from .forms import UserCreateForm
 from datetime import date
+from import_export.admin import ImportExportModelAdmin
 
-
-class AppUserAdmin(UserAdmin):
+class AppUserAdmin(ImportExportModelAdmin,UserAdmin):
+    list_display = ('username','first_name','last_name','email','is_student','is_teacher','is_staff')
     ordering = ['is_teacher', '-id']
     add_form = UserCreateForm
     fieldsets = UserAdmin.fieldsets + (
@@ -38,7 +39,7 @@ class SubjectAdmin(admin.ModelAdmin):
     search_fields = ['name', 'semester']
 
 
-class DivAdmin(admin.ModelAdmin):
+class DivAdmin(ImportExportModelAdmin,admin.ModelAdmin):
     ordering = ['-calendar_year', 'semester', 'division']
     list_display = ['div', 'semester', 'get_class_type']
     search_fields = ['division']
@@ -99,7 +100,7 @@ class LectureAdmin(admin.ModelAdmin):
             return qset, use_distinct
 
 
-class StudentAdmin(admin.ModelAdmin):
+class StudentAdmin(ImportExportModelAdmin,admin.ModelAdmin):
     ordering = ['-sapID']
     list_display = ['name', 'sapID']
     autocomplete_fields = ('user',)
@@ -178,7 +179,7 @@ class StudentLectureAdmin(admin.ModelAdmin):
             return qset, use_distinct
 
 
-class StudentDivisionAdmin(admin.ModelAdmin):
+class StudentDivisionAdmin(ImportExportModelAdmin,admin.ModelAdmin):
     ordering = ['-division__calendar_year', '-division__semester', 'student__sapID']
     search_fields = ['student__sapID']
     search_fields.extend(['student__user__first_name', 'student__user__middle_name', 'student__user__last_name'])
