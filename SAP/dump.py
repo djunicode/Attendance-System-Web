@@ -172,6 +172,21 @@ def fillPracs(div_name, end1, end2, end3):
         else:
             print(StudentDivision.objects.get_or_create(student=student, division=p4)[0])
 
+def TeacherDump(path, spec="Computer Engineering"):
+    with open(path, 'r') as csvFile:
+        reader = csv.reader(csvFile)
+        for row in reader:
+            if row[0] != '':
+                id = row[0]
+                f_name = row[1]
+                user = AppUser.objects.create(username=id, password="pass@123")
+                user.set_password('pass@123')
+                user.first_name = f_name
+                user.is_teacher = True
+                user.save()
+                teacher = Teacher.objects.create(user=user, teacherID=id, specialization=spec)
+                print(teacher)
+
 # TO RUN THIS SCRIPT -
 #
 # python manage.py shell
@@ -185,6 +200,9 @@ def fillPracs(div_name, end1, end2, end3):
 # reads names in format "LastName FirstName MiddleName", classteacher is Sindhu Nair and will overwrite old
 # conflicting entries
 # dump.SAPDump("SAP/TEA.csv", "TE_A", overwrite=True, reverse_names=True, classteacher="Sindhu Nair")
+# 
+# dump teachers data
+# dump.TeacherDump("SAP/Teachers.csv")
 #
 # populates current semester (odd for june to dec and even for jan to may) with teacher workload data
 # dump.WorkLoadDump("SAP/WorkLoad.csv")
