@@ -63,29 +63,29 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'attendance_system.urls'
 
 
-CORS_ORIGIN_ALLOW_ALL = False
-CORS_ORIGIN_WHITELIST = config("CORS_ORIGIN_WHITELIST").replace(" ", "").split(",")
+# CORS_ORIGIN_ALLOW_ALL = False
+# CORS_ORIGIN_WHITELIST = config("CORS_ORIGIN_WHITELIST").replace(" ", "").split(",")
 
-CORS_ALLOW_METHODS = (
-    'GET',
-    'DELETE',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-)
+# CORS_ALLOW_METHODS = (
+#     'GET',
+#     'DELETE',
+#     'OPTIONS',
+#     'PATCH',
+#     'POST',
+#     'PUT',
+# )
 
-CORS_ALLOW_HEADERS = (
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-)
+# CORS_ALLOW_HEADERS = (
+#     'accept',
+#     'accept-encoding',
+#     'authorization',
+#     'content-type',
+#     'dnt',
+#     'origin',
+#     'user-agent',
+#     'x-csrftoken',
+#     'x-requested-with',
+# )
 
 TEMPLATES = [
     {
