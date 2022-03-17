@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'Attendance',
     'import_export',
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
@@ -206,3 +207,4 @@ AUTH_USER_MODEL = "Attendance.AppUser"
 
 
 
+CORS_ALLOW_ALL_ORIGINS = True
