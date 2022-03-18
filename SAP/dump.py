@@ -172,6 +172,35 @@ def fillPracs(div_name, end1, end2, end3):
         else:
             print(StudentDivision.objects.get_or_create(student=student, division=p4)[0])
 
+
+def fillPracs2(path, div_name, new_div_name):
+    yearname, division = div_name.split("_")
+    year = Div.yearnameToYear(yearname)
+
+    if date.today().month < 6:
+        semester = year * 2
+    elif date.today().month > 6:
+        semester = year * 2 - 1
+
+    div = Div.objects.get(semester=semester, calendar_year=date.today().year, division=division)
+    p1, _ = Div.objects.get_or_create(semester=semester, calendar_year=date.today().year, classteacher=div.classteacher,
+                                      division=new_div_name)
+
+    with open(path, 'r', encoding='utf-8-sig') as csvFile:
+        reader = csv.reader(csvFile)
+        for row in reader:
+            if row[0] != '':
+                sap = row[0]
+                # print(sap)
+                try:
+                    student = Student.objects.get(sapID=sap)
+                    StudentDivision.objects.get_or_create(student=student, division=p1)
+                    print(student.user.first_name, student.user.last_name, student.sapID)
+                except:
+                    print("\033[91m{}\033[00m" .format(sap + " not found"))
+                
+
+
 def TeacherDump(path, spec="Computer Engineering"):
     with open(path, 'r') as csvFile:
         reader = csv.reader(csvFile)
