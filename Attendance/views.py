@@ -18,7 +18,7 @@ from rest_framework.authentication import TokenAuthentication
 import datetime
 import csv
 
-
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 class HomePage(TemplateView):
     template_name = 'Attendance/index.html'
 
