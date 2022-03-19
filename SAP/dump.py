@@ -241,3 +241,6 @@ def TeacherDump(path, spec="Computer Engineering"):
 #
 # creates 4 practical batches, "TE_A1" upto 20, "TE_A2" upto 41, "TE_A3" upto 59 and "TE_A4" for remaining
 # dump.fillPracs("TE_A", 60004170020, 60004170041, 60004170059)
+# 
+# For pracs batches (TE and BE)
+# dump.fillPracs2("SAP/TE_A1","TE_A","A1")
