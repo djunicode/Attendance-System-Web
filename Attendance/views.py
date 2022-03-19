@@ -778,7 +778,7 @@ class DownloadSAPSheet(generics.GenericAPIView):
         try:
             document.add_picture('/home/wizdem/Attendance-System-Web/SAP/header.png', width=Inches(6))
         except FileNotFoundError:
-            document.add_picture('/SAP/header.png', width=Inches(6))
+            document.add_picture(str(os.path.join(BASE_DIR, 'SAP/header.png')), width=Inches(6))
         last_paragraph = document.paragraphs[-1]
         last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
