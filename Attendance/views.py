@@ -8,7 +8,7 @@ from django.http import HttpResponse, JsonResponse
 import json
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
-
+import os
 from rest_framework import generics, status
 from .models import Teacher, Student, Lecture, Div, Subject, AppUser
 from .models import SubjectTeacher, StudentLecture, StudentDivision
