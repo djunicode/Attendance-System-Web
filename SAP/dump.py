@@ -92,7 +92,7 @@ def SAPDump(path, div_name, overwrite=False, reverse_names=False, classteacher=N
 
 
 def WorkLoadDump(path, semester=current_sem):
-    with open(path, 'r') as csvFile:
+    with open(path, 'r', encoding='utf-8-sig') as csvFile:
         reader = csv.reader(csvFile)
         yr = ''
         sub = ''
