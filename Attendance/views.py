@@ -775,15 +775,15 @@ class DownloadSAPSheet(generics.GenericAPIView):
         font.name = 'Cambria'
         font.size = Pt(11)
 
-#         try:
-#             document.add_picture('/home/wizdem/Attendance-System-Web/SAP/header_new.jpeg', width=Inches(6))
-#         except FileNotFoundError:
-#             document.add_picture(str(os.path.join(BASE_DIR, 'SAP/header_new.jpeg')), width=Inches(6))
+        # try:
+        #     document.add_picture('/home/wizdem/Attendance-System-Web/SAP/header_new.jpeg', width=Inches(6))
+        # except FileNotFoundError:
+        #     document.add_picture(str(os.path.join(BASE_DIR, 'SAP/header_new.jpeg')), width=Inches(6))
         header = document.sections[0].header
         paragraph = header.paragraphs[0]
 
         logo_run = paragraph.add_run()
-        logo_run.add_picture(str(os.path.join(BASE_DIR, 'SAP/header_new.jpeg'), width=Inches(6))
+        logo_run.add_picture(str(os.path.join(BASE_DIR, 'SAP/header_new.jpeg'), width=Inches(6)))
         last_paragraph = document.paragraphs[-1]
         last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
