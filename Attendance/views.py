@@ -784,8 +784,8 @@ class DownloadSAPSheet(generics.GenericAPIView):
 
         logo_run = paragraph.add_run()
         logo_run.add_picture(str(os.path.join(BASE_DIR, 'SAP/header_new.jpeg'), width=Inches(6))
-        last_paragraph = document.paragraphs[-1]
-        last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+#         last_paragraph = document.paragraphs[-1]
+#         last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
         digits = div.calendar_year % 100
         if div.semester % 2 == 0:
