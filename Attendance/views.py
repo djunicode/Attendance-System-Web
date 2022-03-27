@@ -783,7 +783,7 @@ class DownloadSAPSheet(generics.GenericAPIView):
         paragraph = header.paragraphs[0]
 
         logo_run = paragraph.add_run()
-        logo_run.add_picture(str(os.path.join(BASE_DIR, 'SAP/header_new.jpeg')), width=Inches(6))
+        logo_run.add_picture(str(os.path.join(BASE_DIR, 'SAP/header_new.jpeg')), width=Inches(7))
         # last_paragraph = document.paragraphs[-1]
         # last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
