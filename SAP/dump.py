@@ -190,7 +190,7 @@ def fillPracs2(path, div_name, new_div_name):
         reader = csv.reader(csvFile)
         for row in reader:
             if row[0] != '':
-                sap = row[1]
+                sap = row[0]
                 # print(sap)
                 try:
                     student = Student.objects.get(sapID=sap)
