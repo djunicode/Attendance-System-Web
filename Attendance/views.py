@@ -183,6 +183,7 @@ class SignUpTeacherView(generics.GenericAPIView):
 
 class GenericLoginView(generics.GenericAPIView):
     permission_classes = (AllowAny,)
+    serializer_class = StudentSerializer
 
     def post(self, request, *args, **kwargs):
 
