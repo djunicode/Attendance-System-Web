@@ -22,10 +22,16 @@ class AppUser(AbstractUser):
     def getname(self):
         return self.first_name + " " + self.last_name
 
+class Department(models.Model):
+    name = models.CharField(max_length=40)
+
+    def __str__(self):
+        return self.name
 
 class Subject(models.Model):
     name = models.CharField(max_length=50)
     semester = models.PositiveSmallIntegerField()
+    department = models.ForeignKey(Department, null=True, blank=True, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name + '(sem ' + str(self.semester) + ')'
@@ -46,6 +52,7 @@ class Div(models.Model):
     calendar_year = models.PositiveIntegerField(default=datetime.date.today().year)
     division = models.CharField(max_length=10)
     classteacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, default=None)
+    department = models.ForeignKey(Department, null=True, blank=True, on_delete=models.CASCADE)
 
     def __str__(self):
         yearname = ""
@@ -110,7 +117,7 @@ class Lecture(models.Model):
         return self.startTime.strftime("%H:%M:%S") + " - " + self.endTime.strftime("%H:%M:%S")
 
     def getShortTimeString(self):
-        return self.startTime.strftime("%-I:%M") + "-" + self.endTime.strftime("%-I:%M")
+        return self.startTime.strftime("%I:%M") + "-" + self.endTime.strftime("%I:%M")
 
     def getDateTimeString(self):
         return self.date.strftime("%d-%m-%Y") + " : " + self.getTimeString()
